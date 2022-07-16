@@ -33,6 +33,8 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
 
     uint16_t result = CMD_RET_UKN;
 
+    char strBuff[32];
+
     for(uint8_t idx = 0; idx < CMD_TABLE_SIZE; idx++) {
 
         if (!memcmp(pStrCmd, cmdTable[idx].cmdMethod, CMD_METHOD_LNG) &&
@@ -43,7 +45,9 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
         }
     }
     /* printf redirected to UART in uart_interface.c*/
-    printf("<< %s  >> RET = 0x%04x\n", pStrCmd, result);
+    sprintf(strBuff, "<< %s  >> RET = 0x%04x\n", pStrCmd, result);
+
+    LEDC_SetNewRollingString(strBuff, strlen(strBuff));
 
     return result;
 }

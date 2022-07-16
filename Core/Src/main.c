@@ -22,6 +22,7 @@
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -30,9 +31,9 @@
 #include <stdio.h>
 
 #include "cmd_dispatcher.h"
-//#include "usbd_cdc_if.h"
 #include  "ledc_if.h"
 
+#include "usbd_cdc_if.h"
 
 /* USER CODE END Includes */
 
@@ -48,17 +49,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 /* USER CODE END PM */
-#if DEBUG_EXECUTION_TIME
-#define STOPWATCH_INIT()		(HAL_TIM_Base_Start(&htim1))
-#define STOPWATCH_START() 		(htim1.Instance->CNT = 0)
-#define STOPWATCH_STOP()  		(htim1.Instance->CNT)
-#define STOPWATCH_PRINT(idx) 	(printf("%d:%lu\n",(idx), STOPWATCH_STOP()))
-#else
-#define STOPWATCH_INIT()		({})
-#define STOPWATCH_START() 		({})
-#define STOPWATCH_STOP() 		({})
-#define STOPWATCH_PRINT(idx)	({(idx);})
-#endif
+
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
@@ -82,11 +73,8 @@ void MAIN_ShortcutUSB(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-    //uint8_t rxStrlng;
-    //uint8_t* rxStrBuff = NULL;
-	char numberBuff[5] = {"XXXX"};
-	uint16_t number = 0;
-	uint32_t tick;
+   uint8_t rxStrlng;
+   uint8_t* rxStrBuff = NULL;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -102,7 +90,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  //MAIN_ShortcutUSB();
+  MAIN_ShortcutUSB();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -112,12 +100,12 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_TIM1_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
-  STOPWATCH_INIT();
-  LEDC_SetNewRollingString("System started", strlen("System started"));
-  tick = HAL_GetTick();
+  LEDC_SetNewRollingString("Ready", strlen("Ready"));
   /* USER CODE END 2 */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -125,24 +113,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(tick + 350 < HAL_GetTick() && !LEDC_GetRollingStatus())
-	  {
-		  number = (number+1) % 10000;
-		  sprintf(numberBuff, "%04d", number);
-		  tick = HAL_GetTick();
-		  LEDC_SetNewStandingText(numberBuff);
-	  }
-
-
-
-#if 0
       rxStrBuff = VCOMFetchReceivedLine(&rxStrlng);
       if (NULL != rxStrBuff) {
           /* If so and is terminated by <LF>,
              process it as command*/
           CmdDispatch(rxStrBuff, rxStrlng);
       }
-#endif
+
   }
   /* USER CODE END 3 */
 }
@@ -155,6 +132,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -165,7 +143,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL7;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -179,7 +157,13 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
@@ -189,7 +173,7 @@ void SystemClock_Config(void)
 /*printf <=> uart redirection */
 int _write(int file, char *ptr, int len)
 {
-	//CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
+	CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
 	return len;
 }
 

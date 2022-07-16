@@ -131,6 +131,8 @@ static uint8_t ASCII27SEG(uint8_t ascii)
 	case 'z': encoded = 0b01011011; break;
 	case '.': encoded = 0b10000000; break;
 	case '-': encoded = 0b01000000; break;
+	case '>': encoded = 0b01001100; break;
+	case '<': encoded = 0b01011000; break;
 	default: encoded = 0x00; break;
 	}
 	return encoded;
