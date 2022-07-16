@@ -9,7 +9,54 @@
 #define LEDC_PORT_H_
 
 #include <stdint.h>
+#include <string.h>
+
+
+/*
+ * From here down must be file user-defined according to the used hardware
+ * following implementation is for common-anode 4 digit 7-seg display
+ * running on the STM32F103 (BluePill) with following pinout
+ *
+ * I recommended to drive all display pins with transistor and common
+ * pins should be transistor-driven always (MOSFET)
+ *
+ * However, if your MCU is "tough" enough and datasheet says it will
+ * handle it, do not waste your time with transistors...
+ *
+ * So, set correctly pin definition and change macros LEDC_WRITE_7SEG, LEDC_WRITE_ANODES
+ * as you wish (you don't have to follow the register-fashion way) or even rewrite it
+ * as a function. Note that macros with direct access into registers were used to make
+ * these "routines" as fast as possible, because they are called very often (200x second),
+ * and they should not occupy MCU's time for other useful tasks.
+ *
+ */
 #include "stm32f1xx_hal.h"
+
+/* Duplicated from main.h */
+#define LEDC_E_Pin GPIO_PIN_12
+#define LEDC_E_GPIO_Port GPIOB
+#define LEDC_D_Pin GPIO_PIN_13
+#define LEDC_D_GPIO_Port GPIOB
+#define LEDC_DP_Pin GPIO_PIN_14
+#define LEDC_DP_GPIO_Port GPIOB
+#define LEDC_C_Pin GPIO_PIN_15
+#define LEDC_C_GPIO_Port GPIOB
+#define LEDC_G_Pin GPIO_PIN_8
+#define LEDC_G_GPIO_Port GPIOA
+#define LEDC_A_Pin GPIO_PIN_9
+#define LEDC_A_GPIO_Port GPIOA
+#define LEDC_F_Pin GPIO_PIN_10
+#define LEDC_F_GPIO_Port GPIOA
+#define LEDC_A2_Pin GPIO_PIN_15
+#define LEDC_A2_GPIO_Port GPIOA
+#define LEDC_A1_Pin GPIO_PIN_3
+#define LEDC_A1_GPIO_Port GPIOB
+#define LEDC_A4_Pin GPIO_PIN_4
+#define LEDC_A4_GPIO_Port GPIOB
+#define LEDC_B_Pin GPIO_PIN_6
+#define LEDC_B_GPIO_Port GPIOB
+#define LEDC_A3_Pin GPIO_PIN_7
+#define LEDC_A3_GPIO_Port GPIOB
 
 
 /* Bit order for segments of 7 - seg => 0xFF all segments*/
