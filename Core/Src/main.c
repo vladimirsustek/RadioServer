@@ -31,8 +31,9 @@
 #include <stdio.h>
 
 #include "cmd_dispatcher.h"
-#include  "ledc_if.h"
+#include "ledc_if.h"
 
+#include "../esp8266/esp8266_port.h"
 #include "usbd_cdc_if.h"
 
 /* USER CODE END Includes */
@@ -53,7 +54,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -73,7 +75,7 @@ void MAIN_ShortcutUSB(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-   uint8_t rxStrlng;
+   uint32_t rxStrlng;
    uint8_t* rxStrBuff = NULL;
   /* USER CODE END 1 */
 
@@ -96,13 +98,15 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
-  MX_DMA_Init();
-  MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_TIM1_Init();
+  MX_DMA_Init();
   MX_USB_DEVICE_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  ESP_ComInit();
   HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+  HAL_GPIO_WritePin(GPIOA, ESP_RST_Pin, GPIO_PIN_SET);
   LEDC_SetNewRollingString("Ready", strlen("Ready"));
   /* USER CODE END 2 */
 
@@ -114,11 +118,14 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
       rxStrBuff = VCOMFetchReceivedLine(&rxStrlng);
+
       if (NULL != rxStrBuff) {
           /* If so and is terminated by <LF>,
              process it as command*/
           CmdDispatch(rxStrBuff, rxStrlng);
       }
+
+      ESP_CheckReceived();
 
   }
   /* USER CODE END 3 */

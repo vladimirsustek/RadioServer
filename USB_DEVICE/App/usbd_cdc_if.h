@@ -64,7 +64,7 @@
   */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
-
+uint8_t* VCOMFetchReceivedLine(uint32_t* lng);
 /* USER CODE END EXPORTED_TYPES */
 
 /**

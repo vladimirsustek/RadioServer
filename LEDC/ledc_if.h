@@ -12,7 +12,7 @@
 
 
 
-#define MAX_STRING_LNG (uint32_t)(64)
+#define MAX_STRING_LNG (uint32_t)(256)
 #define OFFSET_WHITESPACE (uint32_t)(6)
 
 #define LEDC_RET_BUSY (uint32_t)(1)

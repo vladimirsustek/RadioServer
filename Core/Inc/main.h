@@ -61,6 +61,10 @@ void Error_Handler(void);
 #define LED_GREEN_GPIO_Port GPIOC
 #define ESP_RST_Pin GPIO_PIN_1
 #define ESP_RST_GPIO_Port GPIOA
+#define FLOATING_A_Pin GPIO_PIN_2
+#define FLOATING_A_GPIO_Port GPIOA
+#define FLOATING_B_Pin GPIO_PIN_3
+#define FLOATING_B_GPIO_Port GPIOA
 #define LEDC_E_Pin GPIO_PIN_12
 #define LEDC_E_GPIO_Port GPIOB
 #define LEDC_D_Pin GPIO_PIN_13

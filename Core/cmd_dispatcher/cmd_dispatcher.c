@@ -32,8 +32,8 @@ static const CmdDisp_t cmdTable[CMD_TABLE_SIZE] = {
 uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
 
     uint16_t result = CMD_RET_UKN;
-
     char strBuff[32];
+
 
     for(uint8_t idx = 0; idx < CMD_TABLE_SIZE; idx++) {
 
@@ -44,9 +44,31 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
             break;
         }
     }
+
+    /*Testing interface for ESP8266*/
+    if('A' == pStrCmd[0] && 'T' ==  pStrCmd[1])
+    {
+    	char buff[64] = {0};
+    	char buff2[64] = {0};
+    	memcpy(buff, pStrCmd, lng);
+    	buff[lng - 1] = '\0';
+    	sprintf(buff2, "%s", pStrCmd);
+    	ESP_SendCommand(pStrCmd, lng);
+    	return 0;
+    }
     /* printf redirected to UART in uart_interface.c*/
+#if OLD_LONG_RESPONSE
     sprintf(strBuff, "<< %s  >> RET = 0x%04x\n", pStrCmd, result);
 
+#else
+    switch(result)
+    {
+    case CMD_RET_UKN: { sprintf(strBuff, "CMD_RET_UKN"); } break;
+    case CMD_RET_ERR: { sprintf(strBuff, "CMD_RET_ERR"); } break;
+    case CMD_RET_OK: { sprintf(strBuff, "%s", pStrCmd); } break;
+    default : {  sprintf(strBuff, "TBD"); }
+    }
+#endif
     LEDC_SetNewRollingString(strBuff, strlen(strBuff));
 
     return result;
