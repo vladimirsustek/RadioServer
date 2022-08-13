@@ -56,6 +56,12 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
     	ESP_SendCommand(pStrCmd, lng);
     	return 0;
     }
+    if(!memcmp(pStrCmd, "STR_", strlen("STR_")))
+    {
+    	ESP_SendCommand(pStrCmd+4, lng-4);
+    	return 0;
+    }
+
     /* printf redirected to UART in uart_interface.c*/
 #if OLD_LONG_RESPONSE
     sprintf(strBuff, "<< %s  >> RET = 0x%04x\n", pStrCmd, result);

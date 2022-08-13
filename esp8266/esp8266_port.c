@@ -9,44 +9,91 @@
 
 /* STM32 Hardware dependent UART handle */
 
-#define COM_USR_RX_MESSAGES_MAX				(uint32_t)(8u)
+UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart3_rx;
+
+static uint8_t uartX_rx_buf[ESP_COM_BUFF_LNG] = {0};
+
+#define COM_USR_RX_MESSAGES_MAX				(uint32_t)(4u)
 
 #define BITS_OF_UART_8N1_TRANSACTION		(uint32_t)(10u)
 #define UART_BAUDRATE						(uint32_t)(115200u)
 #define INTO_MILISECONDS					(uint32_t)(1000u)
 #define TIMEOUT_FOR_LONGEST_TRANSACTION		(uint32_t)((ESP_COM_BUFF_LNG*BITS_OF_UART_8N1_TRANSACTION*INTO_MILISECONDS)/UART_BAUDRATE)
 
+#define TIMETOUT_1SECOND					(uint32_t)(1000u)
 
-UART_HandleTypeDef huart3;
-DMA_HandleTypeDef hdma_usart3_rx;
+/* Either calculated timeout according to to maximal buffer size or fixed */
+//#define  TRANSACTION_TIMEOUT				TIMEOUT_FOR_LONGEST_TRANSACTION
+#define TRANSACTION_TIMEOUT					TIMETOUT_1SECOND
 
+
+#define TX_TIMETOUT							TIMETOUT_1SECOND
 
 /* User Buffer */
 static uint8_t comUsrBuffer[COM_USR_RX_MESSAGES_MAX][ESP_COM_BUFF_LNG + 1] = {0};
+static uint32_t comUsrBufferLen[COM_USR_RX_MESSAGES_MAX] = {0};
 static uint32_t comUserBufferMsgIdx = 0;
 static uint32_t comUserBufferMsgReadIdx = 0;
 
 /* Internal buffer*/
 static uint32_t uartX_rx_read_ptr = 0;
-static uint8_t uartX_rx_buf[ESP_COM_BUFF_LNG] = {0};
 
 /* Send command timeout */
 static uint32_t sendTimeOut = 0;
 static uint32_t sendTimeOutStarted = 0;
 
-uint32_t ESP_ComInit()
+static uint32_t Start_DMA_XUART(void);
+static uint32_t CheckRX_DMA_XUART(void);
+static uint32_t ProcessUserBuff_XUART(void);
+
+static uint32_t ProcessUserBuff_XUART(void)
+{
+	while(comUserBufferMsgIdx != comUserBufferMsgReadIdx)
+	{
+		CDC_Transmit_FS(comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
+		CDC_Transmit_FS((uint8_t*)("\r\n"), 2);
+		comUserBufferMsgReadIdx = (comUserBufferMsgReadIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
+	}
+	return 0u;
+}
+
+static uint32_t Start_DMA_XUART(void)
 {
 	uint32_t result;
 	result = (uint32_t)HAL_UART_Receive_DMA(&huart3, uartX_rx_buf, ESP_COM_BUFF_LNG);
 	return result;
 }
 
-uint32_t refresh_uartX(void)
+
+/* @brief Check DMA-based uartX_rx_buf and fetch into comUsrBuffer - must be called periodically
+ *
+ * @detail Function checks whether hardware based uartX_rx_write_ptr (ESP_COM_BUFF_LNG - hdma_usart3_rx.Instance->CNDTR)
+ * is equal to the software served uartX_rx_read_ptr. If these values are not equal, data was received and needs processing.
+ * Function tries to save processing time and therefore timeout-based processing is introduced. Therefore, when any receive
+ * is signaled by inequality of the pointers mentioned upper, the timeOutStarted flag and timeOut is used to wait period
+ * defined by TRANSACTION_TIMEOUT. When the timeOut elapses, loop mechanism fetches data into comUsrBuffer from comUsrBuffer.
+ * The comUsrBuffer is intended to be multi-line (can store COM_USR_RX_MESSAGES_MAX-times the ESP_COM_BUFF_LNG) and each time
+ * the loop processing starts a new comUsrBuffer "line" is added. Also new line may be added if the received data is bigger
+ * then ESP_COM_BUFF_LNG. There is no mechanism to prevent overriding previously stored data if comUsrBuffer is full as the
+ * comUsrBuffer is intended to be ring-buffer.
+ *
+ * Function also interacts with logic of the ESP_SendCommand() and therefore if command is send, the sendTimeOutStarted flag
+ * is set and sendTimeOut starts. The CheckRX_DMA_XUART may stop the timeout if any data was received (so even unexpected).
+ *
+ * @return
+ * ESP_RX_PENDING - when timeout is ongoing
+ * ESP_OK - receive happened
+ * ESP_RX_SILENT - no receive or timeout ongoing
+ * ESP_NEVER_VALUE - initial value which must not be ever returned
+ *
+ */
+static uint32_t CheckRX_DMA_XUART(void)
 {
 
-	uint32_t result = ESP_NEVER_TESTING_VALUE;
-	char prev_rec_c = '\0';
+	uint32_t result = ESP_NEVER_VALUE;
 	uint32_t writtenChars = 0;
+
 	static uint32_t timeOut = 0;
 	static uint32_t timeOutStarted = 0;
 
@@ -70,12 +117,12 @@ uint32_t refresh_uartX(void)
 		else
 		{
 			/* If timer was started and timeout elapsed, retrieve bytes */
-			if (timeOut + TIMEOUT_FOR_LONGEST_TRANSACTION < HAL_GetTick())
+			if (timeOut + TRANSACTION_TIMEOUT < HAL_GetTick())
 			{
 				/* cancel timer to receive all bytes */
 				timeOutStarted = 0;
-
-				while (uartX_rx_read_ptr != (ESP_COM_BUFF_LNG - hdma_usart3_rx.Instance->CNDTR))
+				uint32_t uartX_rx_write_ptr = (ESP_COM_BUFF_LNG - hdma_usart3_rx.Instance->CNDTR);
+				while (uartX_rx_read_ptr != uartX_rx_write_ptr)
 				{
 					/* Said my teacher is better ... to really get DMA content actualized .. Don't Know*/
 					__ISB();
@@ -87,25 +134,15 @@ uint32_t refresh_uartX(void)
 					uartX_rx_read_ptr = (uartX_rx_read_ptr + (uint32_t)1u) % ESP_COM_BUFF_LNG;
 
 					/* If the end of the string arrived or string is too long for one line, jump on the next line of comUsrBuffer*/
-					if((('\r' == prev_rec_c) && ('\n' ==  comUsrBuffer[comUserBufferMsgIdx][writtenChars] )) || (writtenChars >= ESP_COM_BUFF_LNG-1))
+					if (uartX_rx_read_ptr == uartX_rx_write_ptr || (writtenChars >= (ESP_COM_BUFF_LNG-1)))
 					{
-						/* With ring wrap around*/
+						/* Non-<CR><LF> message received> .. some exception mechanism */
+						comUsrBufferLen[comUserBufferMsgIdx] = writtenChars+1;
 						comUserBufferMsgIdx = (comUserBufferMsgIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
 						result = ESP_OK;
 					}
-					else
-					{
-						if (uartX_rx_read_ptr == (ESP_COM_BUFF_LNG - hdma_usart3_rx.Instance->CNDTR))
-						{
-							/* Non-<CR><LF> message received> .. some exception mechanism */
-							result = ESP_INCORRECT_CRLF;
-						}
-
-					}
-
-					prev_rec_c = comUsrBuffer[comUserBufferMsgIdx][writtenChars];
-
 					writtenChars++;
+					uartX_rx_write_ptr = (ESP_COM_BUFF_LNG - hdma_usart3_rx.Instance->CNDTR);
 
 				}
 			}
@@ -118,27 +155,36 @@ uint32_t refresh_uartX(void)
 	}
 	else
 	{
-		result = ESP_RX_SILENT;
+		/* and was expected response from previous command, cancel timeout timer of the command */
+		if(sendTimeOutStarted && sendTimeOut + TX_TIMETOUT < HAL_GetTick())
+		{
+			sendTimeOutStarted = 0;
+			result = ESP_TX_TIMEOUT;
+		}
+		else
+		{
+			result = ESP_RX_SILENT;
+
+		}
 	}
 
 
-	while(result == ESP_NEVER_TESTING_VALUE);
+	while(result == ESP_NEVER_VALUE);
 
 	return result;
 }
 
-int processUserBuffer()
+
+uint32_t ESP_ComInit()
 {
-	while(comUserBufferMsgIdx != comUserBufferMsgReadIdx)
-	{
-		printf((char*)comUsrBuffer[comUserBufferMsgReadIdx]);
-		comUserBufferMsgReadIdx = (comUserBufferMsgReadIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
-	}
-	return 0;
+	uint32_t result = 0;
+	result = Start_DMA_XUART();
+	return result;
 }
+
 uint32_t ESP_SendCommand(uint8_t* pStrCmd, uint32_t lng)
 {
-	uint32_t result = ESP_NEVER_TESTING_VALUE;
+	uint32_t result = ESP_NEVER_VALUE;
 
 	if(!sendTimeOutStarted)
 	{
@@ -157,18 +203,29 @@ uint32_t ESP_SendCommand(uint8_t* pStrCmd, uint32_t lng)
 
 uint32_t ESP_CheckReceived()
 {
-	uint32_t result = refresh_uartX();
-	processUserBuffer();
-	return 0;
+	uint32_t result;
+
+	result = CheckRX_DMA_XUART();
+
+	ProcessUserBuff_XUART();
+
+	switch(result)
+	{
+	case ESP_OK : LEDC_SetNewRollingString("ESP FINE ", strlen("ESP FINE")); break;
+	case ESP_TX_TIMEOUT : LEDC_SetNewRollingString("ESP BAD ", strlen("ESP FINE")); break;
+	default : break;
+	}
+
+	return 0u;
 }
 
-
+#if NEEDED_RING_BUFFER_OVERFLOW
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance == USART3)
 	{
-		printf("UART RX %ld bytes overflow\r\n", ESP_COM_BUFF_LNG);
 	}
 
 }
+#endif
 
