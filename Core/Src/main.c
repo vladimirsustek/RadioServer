@@ -99,15 +99,19 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_TIM2_Init();
-  MX_TIM1_Init();
   MX_DMA_Init();
   MX_USB_DEVICE_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+
   ESP_ComInit();
+
   HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+
   HAL_GPIO_WritePin(GPIOA, ESP_RST_Pin, GPIO_PIN_SET);
+
   LEDC_SetNewRollingString("Ready", strlen("Ready"));
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,14 +123,18 @@ int main(void)
     /* USER CODE BEGIN 3 */
       rxStrBuff = VCOMFetchReceivedLine(&rxStrlng);
 
-      if (NULL != rxStrBuff) {
+      if (NULL != rxStrBuff)
+      {
           /* If so and is terminated by <LF>,
              process it as command*/
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-      ESP_CheckReceived();
-
+      ESP_SendCommand("AT\r\n", strlen("AT\r\n"));
+      if(!ESP_CheckResponse("OK\r\n", strlen("AT\r\n")))
+      {
+    	  LEDC_SetNewRollingString("SEX", strlen("SEX"));
+      }
   }
   /* USER CODE END 3 */
 }

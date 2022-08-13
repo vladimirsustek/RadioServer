@@ -7,6 +7,7 @@
 #define CMD_METHOD_SET "ST"
 #define CMD_METHOD_GET "GT"
 #define CMD_METHOD_DO  "DO"
+#define CMD_METOD_AT   "AT"
 
 /*** FM-RX RDA5807M SUPPORTED COMMANDS ***/
 

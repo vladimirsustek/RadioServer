@@ -21,7 +21,7 @@ static uint8_t uartX_rx_buf[ESP_COM_BUFF_LNG] = {0};
 #define INTO_MILISECONDS					(uint32_t)(1000u)
 #define TIMEOUT_FOR_LONGEST_TRANSACTION		(uint32_t)((ESP_COM_BUFF_LNG*BITS_OF_UART_8N1_TRANSACTION*INTO_MILISECONDS)/UART_BAUDRATE)
 
-#define TIMETOUT_1SECOND					(uint32_t)(1000u)
+#define TIMETOUT_1SECOND					(uint32_t)(5000u)
 
 /* Either calculated timeout according to to maximal buffer size or fixed */
 //#define  TRANSACTION_TIMEOUT				TIMEOUT_FOR_LONGEST_TRANSACTION
@@ -49,13 +49,7 @@ static uint32_t ProcessUserBuff_XUART(void);
 
 static uint32_t ProcessUserBuff_XUART(void)
 {
-	while(comUserBufferMsgIdx != comUserBufferMsgReadIdx)
-	{
-		CDC_Transmit_FS(comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
-		CDC_Transmit_FS((uint8_t*)("\r\n"), 2);
-		comUserBufferMsgReadIdx = (comUserBufferMsgReadIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
-	}
-	return 0u;
+
 }
 
 static uint32_t Start_DMA_XUART(void)
@@ -175,6 +169,34 @@ static uint32_t CheckRX_DMA_XUART(void)
 }
 
 
+uint32_t ESP_CheckForKeyWord(char *key, uint32_t key_lng, uint8_t *buff, uint32_t buff_lng)
+{
+	uint32_t result = ESP_RSP_ERR;
+	uint8_t* pBuff = buff;
+
+	if(key == NULL || buff == NULL)
+	{
+		return ESP_HARD_ERR;
+	}
+	if(key_lng > buff_lng)
+	{
+		return result;
+	}
+
+	for (uint32_t idx = 0; idx < buff_lng - key_lng + 1; idx++)
+	{
+		if(!memcmp(pBuff, key, key_lng))
+		{
+			result = ESP_OK;
+			break;
+		}
+
+		(uint8_t*)pBuff++;
+
+	}
+	return result;
+}
+
 uint32_t ESP_ComInit()
 {
 	uint32_t result = 0;
@@ -201,22 +223,67 @@ uint32_t ESP_SendCommand(uint8_t* pStrCmd, uint32_t lng)
 	return result;
 }
 
-uint32_t ESP_CheckReceived()
+void ESP_CheckReceived()
 {
 	uint32_t result;
 
-	result = CheckRX_DMA_XUART();
-
-	ProcessUserBuff_XUART();
-
-	switch(result)
+	if (ESP_OK == CheckRX_DMA_XUART())
 	{
-	case ESP_OK : LEDC_SetNewRollingString("ESP FINE ", strlen("ESP FINE")); break;
-	case ESP_TX_TIMEOUT : LEDC_SetNewRollingString("ESP BAD ", strlen("ESP FINE")); break;
-	default : break;
+		ProcessUserBuff_XUART();
+
+		switch(result)
+		{
+		case ESP_OK : LEDC_SetNewRollingString("ESP FINE ", strlen("ESP FINE")); break;
+		case ESP_TX_TIMEOUT : LEDC_SetNewRollingString("ESP BAD ", strlen("ESP FINE")); break;
+		default : break;
+		}
+
+	}
+}
+
+uint32_t ESP_CheckResponse(char *key, uint32_t key_lng)
+{
+	uint32_t rxResult;
+	uint32_t processingResult;
+	uint32_t okAlreadyArrived;
+	do
+	{
+		rxResult = CheckRX_DMA_XUART();
+
+	} while(rxResult == ESP_RX_PENDING || rxResult == ESP_TX_TIMEOUT || rxResult == ESP_RX_SILENT);
+
+	if (ESP_OK == rxResult)
+	{
+		while(comUserBufferMsgIdx != comUserBufferMsgReadIdx)
+		{
+			/* Just stupid print out what's received */
+			CDC_Transmit_FS(comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
+			CDC_Transmit_FS((uint8_t*)("\r\n"), 2);
+
+			processingResult = ESP_CheckForKeyWord(key, key_lng, comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
+
+			if (processingResult == ESP_OK)
+			{
+				okAlreadyArrived = 1;
+			}
+
+			/* Logic to iterate in the multi-line buffer */
+			comUserBufferMsgReadIdx = (comUserBufferMsgReadIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
+
+		}
+	}
+	else
+	{
+		/* timeout occured .. */
 	}
 
-	return 0u;
+	/* If multiline were processed and e.g. second last already had OK - still response arrived*/
+	if(okAlreadyArrived && processingResult != ESP_OK)
+	{
+		processingResult = ESP_OK;
+	}
+
+	return processingResult;
 }
 
 #if NEEDED_RING_BUFFER_OVERFLOW

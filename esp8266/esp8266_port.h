@@ -27,8 +27,10 @@
 #define ESP_INCORRECT_CRLF			(uint32_t)(-3)
 #define ESP_RX_PENDING				(uint32_t)(-4)
 #define ESP_TX_TIMEOUT				(uint32_t)(-5)
+#define ESP_HARD_ERR				(uint32_t)(-6)
+#define ESP_RSP_ERR					(uint32_t)(-7)
 
 uint32_t ESP_ComInit();
 uint32_t ESP_SendCommand(uint8_t* pStrCmd, uint32_t lng);
-uint32_t ESP_CheckReceived();
+void ESP_CheckReceived();
 #endif /* ESP8266_PORT_H_ */
