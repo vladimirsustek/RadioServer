@@ -56,6 +56,33 @@
 /* USER CODE BEGIN PV */
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
+
+char *homo = "<!DOCTYPE html>\n\
+		<html>\n\
+		<body>\n\
+		<h1>ESP8266 USER DATA COLLECTION</h1>\n\
+		<p>Enter the Details in the form below: </p>\n\
+		<form action=\"/page1\">\n\
+		<label for=\"fname\">First Name:</label><br>\n\
+		<input type=\"text\" id=\"fname\" name=\"fname\" value=\"\"><br><br>\n\
+		<label for=\"lname\">Last Name:</label><br>\n\
+		<input type=\"text\" id=\"lname\" name=\"lname\" value=\"\"><br><br>\n\
+		<label for=\"age\">Age:</label><br>\n\
+		<input type=\"number\" id=\"age\" name=\"age\" value=\"\"><br><br>\n\
+		<input type=\"submit\" value=\"Submit\">\n\
+		</form><br><br>\n\
+		<form action=\"/page2\">\n\
+		<input type=\"submit\" value=\"View Data\">\n\
+		</form>\n\
+		</body></html>";
+/*
+char *homo = "<!DOCTYPE html>\n\
+		<html>\n\
+		<body>\n\
+		<h1>ESP8266 USER DATA COLLECTION</h1>\n\
+		</form>\n\
+		</body></html>";
+*/
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,13 +131,19 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  ESP_ComInit();
-
   HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
 
-  HAL_GPIO_WritePin(GPIOA, ESP_RST_Pin, GPIO_PIN_SET);
+  ESP_ComInit();
 
-  LEDC_SetNewRollingString("Ready", strlen("Ready"));
+  if(!ESP_httpInit())
+  {
+	  //LEDC_SetNewRollingString("ESP Init succeeded", strlen("ESP Init succeeded"));
+  }
+  else
+  {
+	  //LEDC_SetNewRollingString("ESP Init failed", strlen("ESP Init failed"));
+  }
+
 
   /* USER CODE END 2 */
 
@@ -130,11 +163,14 @@ int main(void)
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-      ESP_SendCommand("AT\r\n", strlen("AT\r\n"));
-      if(!ESP_CheckResponse("OK\r\n", strlen("AT\r\n")))
-      {
-    	  LEDC_SetNewRollingString("SEX", strlen("SEX"));
-      }
+      //ESP_CheckReceived();
+
+      //if(!ESP_CheckResponse("CONNECT", strlen("CONNECT"), ESP_TIMEOUT_300ms))
+      //{
+    	//  Server_Send(homo, 0);
+     // }
+      ESP_ServerProcess(500);
+
   }
   /* USER CODE END 3 */
 }

@@ -30,7 +30,32 @@
 #define ESP_HARD_ERR				(uint32_t)(-6)
 #define ESP_RSP_ERR					(uint32_t)(-7)
 
-uint32_t ESP_ComInit();
-uint32_t ESP_SendCommand(uint8_t* pStrCmd, uint32_t lng);
-void ESP_CheckReceived();
+#define ESP_DONT_CHECK_RESPONSE_P	(char*)(NULL)
+#define ESP_DONT_CHECK_RESPONSE_V	(uint32_t)(0)
+
+#define ESP_TIMEOUT_2s				(uint32_t)(2000u)
+#define ESP_TIMEOUT_1s				(uint32_t)(1000u)
+#define ESP_TIMEOUT_300ms			(uint32_t)(300u)
+
+#define COM_USR_RX_MESSAGES_MAX				(uint32_t)(4u)
+
+#define BITS_OF_UART_8N1_TRANSACTION		(uint32_t)(10u)
+#define UART_BAUDRATE						(uint32_t)(115200u)
+#define INTO_MILISECONDS					(uint32_t)(1000u)
+#define TIMEOUT_FOR_LONGEST_TRANSACTION		(uint32_t)((ESP_COM_BUFF_LNG*BITS_OF_UART_8N1_TRANSACTION*INTO_MILISECONDS)/UART_BAUDRATE)
+
+#define TIMETOUT_1SECOND					(uint32_t)(1000u)
+
+/* Either calculated timeout according to to maximal buffer size or fixed */
+//#define  TRANSACTION_TIMEOUT				TIMEOUT_FOR_LONGEST_TRANSACTION
+#define TRANSACTION_TIMEOUT					TIMETOUT_1SECOND
+
+
+#define TX_TIMETOUT							TIMETOUT_1SECOND
+
+uint32_t ESP_ComInit(void);
+uint32_t ESP_SendCommand(const char* const pStrCmd, const uint32_t lng);
+uint32_t ESP_CheckReceived(void);
+uint32_t ESP_CheckResponse(char* key, const uint32_t key_lng, uint32_t timeout);
+uint32_t ESP_CheckForKeyWord(char * key, const uint32_t key_lng, uint8_t * buff, const uint32_t buff_lng);
 #endif /* ESP8266_PORT_H_ */
