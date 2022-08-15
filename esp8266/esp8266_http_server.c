@@ -123,6 +123,12 @@ uint32_t Server_Send (char *str, int Link_ID)
 
 uint32_t CheckRX_DMA_XUART(uint32_t timeout);
 
+/* This function needs no timemout ...
+ * Function may just provide string of the request if IPD and HTTP is there
+ * and can be placed anywhere else lower ... (not in app server module)
+ * so maybe some universal function with selectebale (mutable) timeout
+ * which checks for keyword and (optionally) may copy out searched string
+ * */
 uint32_t ESP_ServerProcess(uint32_t timeout)
 {
 	uint32_t rxResult;
@@ -133,6 +139,7 @@ uint32_t ESP_ServerProcess(uint32_t timeout)
 	char *pBegin = NULL;
 	uint32_t pageNum, linkNum;
 
+	/* This action may be non-blocking ... just jump out*/
 	do
 	{
 		rxResult = CheckRX_DMA_XUART(timeout);
