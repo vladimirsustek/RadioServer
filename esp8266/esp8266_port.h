@@ -29,6 +29,7 @@
 #define ESP_TX_TIMEOUT				(uint32_t)(-5)
 #define ESP_HARD_ERR				(uint32_t)(-6)
 #define ESP_RSP_ERR					(uint32_t)(-7)
+#define ESP_TOO_LONG_HTTP			(uint32_t)(-8)
 
 #define ESP_DONT_CHECK_RESPONSE_P	(char*)(NULL)
 #define ESP_DONT_CHECK_RESPONSE_V	(uint32_t)(0)
@@ -50,12 +51,13 @@
 //#define  TRANSACTION_TIMEOUT				TIMEOUT_FOR_LONGEST_TRANSACTION
 #define TRANSACTION_TIMEOUT					TIMETOUT_1SECOND
 
-
 #define TX_TIMETOUT							TIMETOUT_1SECOND
+
+typedef uint32_t (*U32_pFn_pC_pC_U32_pC_pU32)	(char *, char*, uint32_t, char **, uint32_t *);
 
 uint32_t ESP_ComInit(void);
 uint32_t ESP_SendCommand(const char* const pStrCmd, const uint32_t lng);
 uint32_t ESP_CheckReceived(void);
 uint32_t ESP_CheckResponse(char* key, const uint32_t key_lng, uint32_t timeout);
-uint32_t ESP_CheckForKeyWord(char * key, const uint32_t key_lng, uint8_t * buff, const uint32_t buff_lng);
+uint32_t ESP_CheckForKeyWord(char * key, char * buff, uint32_t buff_lng, char **ppRetStr, uint32_t *retVal);
 #endif /* ESP8266_PORT_H_ */

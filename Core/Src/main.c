@@ -40,7 +40,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+extern uint32_t ESP_httpInit (void);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -57,32 +57,6 @@
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 
-char *homo = "<!DOCTYPE html>\n\
-		<html>\n\
-		<body>\n\
-		<h1>ESP8266 USER DATA COLLECTION</h1>\n\
-		<p>Enter the Details in the form below: </p>\n\
-		<form action=\"/page1\">\n\
-		<label for=\"fname\">First Name:</label><br>\n\
-		<input type=\"text\" id=\"fname\" name=\"fname\" value=\"\"><br><br>\n\
-		<label for=\"lname\">Last Name:</label><br>\n\
-		<input type=\"text\" id=\"lname\" name=\"lname\" value=\"\"><br><br>\n\
-		<label for=\"age\">Age:</label><br>\n\
-		<input type=\"number\" id=\"age\" name=\"age\" value=\"\"><br><br>\n\
-		<input type=\"submit\" value=\"Submit\">\n\
-		</form><br><br>\n\
-		<form action=\"/page2\">\n\
-		<input type=\"submit\" value=\"View Data\">\n\
-		</form>\n\
-		</body></html>";
-/*
-char *homo = "<!DOCTYPE html>\n\
-		<html>\n\
-		<body>\n\
-		<h1>ESP8266 USER DATA COLLECTION</h1>\n\
-		</form>\n\
-		</body></html>";
-*/
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,6 +78,8 @@ int main(void)
   /* USER CODE BEGIN 1 */
    uint32_t rxStrlng;
    uint8_t* rxStrBuff = NULL;
+   char *pHTTPReq = NULL;
+   uint32_t httpReqLng = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -163,13 +139,10 @@ int main(void)
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-      //ESP_CheckReceived();
-
-      //if(!ESP_CheckResponse("CONNECT", strlen("CONNECT"), ESP_TIMEOUT_300ms))
-      //{
-    	//  Server_Send(homo, 0);
-     // }
-      ESP_ServerProcess(500);
+      if(ESP_OK == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
+      {
+          ESP_ProcessHTTP(pHTTPReq, httpReqLng);
+      }
 
   }
   /* USER CODE END 3 */

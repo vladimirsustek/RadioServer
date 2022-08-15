@@ -10,8 +10,10 @@
 
 #include "esp8266_utils.h"
 
+#define MAX_HTTP_REQ_SIZE			(uint32_t)(128)
+
 uint32_t ESP_httpInit (void);
-uint32_t Server_Send (char *str, int Link_ID);
+uint32_t Server_Send (char *str, uint32_t Link_ID);
 
 typedef struct
 {

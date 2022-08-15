@@ -7,6 +7,8 @@
 
 #include "esp8266_port.h"
 
+
+#define PRINT_EACH_RECEIVE 0
 /* STM32 Hardware dependent UART handle */
 
 UART_HandleTypeDef huart3;
@@ -70,7 +72,8 @@ uint32_t Start_DMA_XUART(void)
  * ESP_NEVER_VALUE - initial value which must not be ever returned
  *
  */
-uint32_t CheckRX_DMA_XUART(uint32_t timeout)
+
+uint32_t CheckRX_DMA_XUART(const uint32_t timeout)
 {
 
 	uint32_t result = ESP_NEVER_VALUE;
@@ -155,11 +158,12 @@ uint32_t CheckRX_DMA_XUART(uint32_t timeout)
 	return result;
 }
 
-
-uint32_t ESP_CheckForKeyWord(char * key, const uint32_t key_lng, uint8_t * buff, const uint32_t buff_lng)
+uint32_t ESP_CheckForKeyWord(char * key, char * buff, uint32_t buff_lng, char **ppRetStr, uint32_t *retVal)
 {
-	uint32_t result = ESP_RSP_ERR;
-	uint8_t* pBuff = buff;
+	uint32_t result = ESP_RSP_ERR, key_lng = strlen(key);
+	char* pBuff = buff;
+
+	UNUSED(ppRetStr);
 
 	if(key == NULL || buff == NULL)
 	{
@@ -175,12 +179,20 @@ uint32_t ESP_CheckForKeyWord(char * key, const uint32_t key_lng, uint8_t * buff,
 		if(!memcmp(pBuff, key, key_lng))
 		{
 			result = ESP_OK;
+			*ppRetStr = pBuff;
+			*retVal = key_lng;
 			break;
 		}
 
 		(uint8_t*)pBuff++;
 
 	}
+	if(result!= ESP_OK)
+	{
+		*retVal = 0;
+		*ppRetStr = NULL;
+	}
+
 	return result;
 }
 
@@ -214,56 +226,71 @@ uint32_t ESP_SendCommand(const char* const pStrCmd, const uint32_t lng)
 	return result;
 }
 
-uint32_t ESP_CheckReceived(void)
+uint32_t ESP_CheckRX(uint32_t timeOut,
+				     uint32_t blockingTimeOut,
+					 U32_pFn_pC_pC_U32_pC_pU32 processFn,
+					 char * keyWord,
+					 char **retStr,
+					 uint32_t * retU32)
 {
-	return ESP_CheckResponse(ESP_DONT_CHECK_RESPONSE_P, ESP_DONT_CHECK_RESPONSE_V, ESP_TIMEOUT_1s);
+	uint32_t rxResult = ESP_HARD_ERR;
+	uint32_t processingResult = ESP_HARD_ERR;
+	uint32_t okAlreadyArrived = 0;
 
-}
-
-uint32_t ESP_CheckResponse(char* key, const uint32_t key_lng, uint32_t timeout)
-{
-	uint32_t rxResult;
-	uint32_t processingResult;
-	uint32_t okAlreadyArrived;
-	do
+	if(blockingTimeOut)
 	{
-		rxResult = CheckRX_DMA_XUART(timeout);
-
-	} while(rxResult == ESP_RX_PENDING || rxResult == ESP_TX_TIMEOUT || rxResult == ESP_RX_SILENT);
-
-	if (ESP_OK == rxResult)
-	{
-		while(comUserBufferMsgIdx != comUserBufferMsgReadIdx)
+		do
 		{
-			/* Just stupid print out what's received */
-			CDC_Transmit_FS(comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
-			CDC_Transmit_FS((uint8_t*)("\r\n"), 2);
+			rxResult = CheckRX_DMA_XUART(timeOut);
+		}
+		while(rxResult == ESP_RX_PENDING || rxResult == ESP_TX_TIMEOUT || rxResult == ESP_RX_SILENT);
 
-			if(key != ESP_DONT_CHECK_RESPONSE_P)
+		if(rxResult == ESP_OK)
+		{
+			while(comUserBufferMsgIdx != comUserBufferMsgReadIdx)
 			{
-				processingResult = ESP_CheckForKeyWord(key, key_lng, comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
+#if PRINT_EACH_RECEIVE
+				CDC_Transmit_FS(comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
+				CDC_Transmit_FS((uint8_t*)("\r\n"), 2);
+#endif
+				processingResult = processFn(keyWord,
+											(char*)comUsrBuffer[comUserBufferMsgReadIdx],
+											comUsrBufferLen[comUserBufferMsgReadIdx],
+											retStr,
+											retU32);
+				comUserBufferMsgReadIdx = (comUserBufferMsgReadIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
 			}
-			else
-			{
-				processingResult = ESP_OK;
-			}
-
-			if (processingResult == ESP_OK)
-			{
-				okAlreadyArrived = 1;
-			}
-
-			/* Logic to iterate in the multi-line buffer */
-			comUserBufferMsgReadIdx = (comUserBufferMsgReadIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
-
+		}
+		else
+		{
+			processingResult = rxResult;
 		}
 	}
 	else
 	{
-		/* timeout occured .. */
+		if ((rxResult = CheckRX_DMA_XUART(timeOut)) == ESP_OK)
+		{
+			while(comUserBufferMsgIdx != comUserBufferMsgReadIdx)
+			{
+#if PRINT_EACH_RECEIVE
+				CDC_Transmit_FS(comUsrBuffer[comUserBufferMsgReadIdx], comUsrBufferLen[comUserBufferMsgReadIdx]);
+				CDC_Transmit_FS((uint8_t*)("\r\n"), 2);
+#endif
+				processingResult = processFn(keyWord,
+											(char*)comUsrBuffer[comUserBufferMsgReadIdx],
+											comUsrBufferLen[comUserBufferMsgReadIdx],
+											retStr,
+											retU32);
+				comUserBufferMsgReadIdx = (comUserBufferMsgReadIdx + (uint32_t)1u) % COM_USR_RX_MESSAGES_MAX;
+			}
+		}
+		else
+		{
+			processingResult = rxResult;
+		}
 	}
 
-	/* If multiline were processed and e.g. second last already had OK - still response arrived*/
+
 	if(okAlreadyArrived && processingResult != ESP_OK)
 	{
 		processingResult = ESP_OK;
@@ -272,13 +299,17 @@ uint32_t ESP_CheckResponse(char* key, const uint32_t key_lng, uint32_t timeout)
 	return processingResult;
 }
 
-#if NEEDED_RING_BUFFER_OVERFLOW
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+uint32_t ESP_CheckResponse(char *pCmd, uint32_t cmdLng, uint32_t timeOut)
 {
-	if(huart->Instance == USART3)
-	{
-	}
+	const uint32_t blockingTimeoutYes = 1u;
 
+	uint32_t result = ESP_RSP_ERR;
+	uint32_t pDummyU32;
+
+	char *pDummyC = NULL;
+
+	result = ESP_CheckRX(timeOut, blockingTimeoutYes, ESP_CheckForKeyWord, pCmd, &pDummyC, &pDummyU32);
+
+	return result;
 }
-#endif
 
