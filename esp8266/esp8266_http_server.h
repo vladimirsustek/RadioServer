@@ -8,18 +8,17 @@
 #ifndef ESP8266_HTTP_SERVER_H_
 #define ESP8266_HTTP_SERVER_H_
 
+#include "esp8266_port.h"
 #include "esp8266_utils.h"
+#include "esp8266_http_data.h"
+#include "esp8266_functions.h"
+#include "rda5807m.h"
+#include "main.h"
 
 #define MAX_HTTP_REQ_SIZE			(uint32_t)(128)
 
-uint32_t ESP_httpInit (void);
-uint32_t Server_Send (char *str, uint32_t Link_ID);
-
-typedef struct
-{
-	char firstname[15];
-	char lastname[15];
-	char age[3];
-}userDetails;
+uint32_t ESP_HTTPinit(void);
+uint32_t ESP_CheckReceiveHTTP(char **ppHTTPreq, uint32_t *pHTTPreqLng);
+char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng);
 
 #endif /* ESP8266_HTTP_SERVER_H_ */

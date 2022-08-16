@@ -1,6 +1,8 @@
 #include "cmd_commands.h"
 #include "cmd_defs.h"
 #include "cmd_rda5807m.h"
+#include "ledc_if.h"
+#include "../esp8266/esp8266_functions.h"
 
 #define CMD_TABLE_SIZE  (uint8_t)(16)
 
@@ -53,12 +55,12 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
     	memcpy(buff, pStrCmd, lng);
     	buff[lng - 1] = '\0';
     	sprintf(buff2, "%s", pStrCmd);
-    	ESP_SendCommand(pStrCmd, lng);
+    	ESP_SendCommand((char*)pStrCmd, lng);
     	return 0;
     }
     if(!memcmp(pStrCmd, "STR_", strlen("STR_")))
     {
-    	ESP_SendCommand(pStrCmd+4, lng-4);
+    	ESP_SendCommand((char*)(pStrCmd+4), lng-4);
     	return 0;
     }
 

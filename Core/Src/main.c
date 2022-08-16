@@ -33,7 +33,7 @@
 #include "cmd_dispatcher.h"
 #include "ledc_if.h"
 
-#include "../esp8266/esp8266_port.h"
+#include "../esp8266/esp8266_http_server.h"
 #include "usbd_cdc_if.h"
 
 /* USER CODE END Includes */
@@ -76,6 +76,7 @@ void MAIN_ShortcutUSB(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+   uint32_t initStateLEDC = 0, initStateESP = 0;
    uint32_t rxStrlng;
    uint8_t* rxStrBuff = NULL;
    char *pHTTPReq = NULL;
@@ -107,19 +108,16 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+  /* MCU's HW initialized, turn off green LED*/
+  BLUEPILL_LED(0);
 
-  ESP_ComInit();
+  initStateLEDC = LEDC_InitHW();
+  initStateESP = ESP_HTTPinit();
 
-  if(!ESP_httpInit())
+  if(initStateESP || initStateLEDC)
   {
-	  //LEDC_SetNewRollingString("ESP Init succeeded", strlen("ESP Init succeeded"));
+	  /* Do an error routine */
   }
-  else
-  {
-	  //LEDC_SetNewRollingString("ESP Init failed", strlen("ESP Init failed"));
-  }
-
 
   /* USER CODE END 2 */
 
@@ -201,6 +199,7 @@ int _write(int file, char *ptr, int len)
 	return len;
 }
 
+/* Simulates that the USB was disconnected and so allows new USB insert*/
 void MAIN_ShortcutUSB(void)
 {
 	  GPIO_InitTypeDef GPIO_InitStruct = {0};

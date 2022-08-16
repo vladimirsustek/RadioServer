@@ -7,6 +7,44 @@
 
 #include "esp8266_utils.h"
 
+uint32_t ESP_CheckForKeyWord(char * key, char * buff, uint32_t buff_lng, char **ppRetStr, uint32_t *retVal)
+{
+	uint32_t result = ESP_RSP_ERR, key_lng = strlen(key);
+	char* pBuff = buff;
+
+	UNUSED(ppRetStr);
+
+	if(key == NULL || buff == NULL)
+	{
+		return ESP_HARD_ERR;
+	}
+	if(key_lng > buff_lng)
+	{
+		return result;
+	}
+
+	for (uint32_t idx = 0; idx < buff_lng - key_lng + 1; idx++)
+	{
+		if(!memcmp(pBuff, key, key_lng))
+		{
+			result = ESP_OK;
+			*ppRetStr = pBuff;
+			*retVal = key_lng;
+			break;
+		}
+
+		(uint8_t*)pBuff++;
+
+	}
+	if(result!= ESP_OK)
+	{
+		*retVal = 0;
+		*ppRetStr = NULL;
+	}
+
+	return result;
+}
+
 char* IsESP_httpRequest(char* pStr, uint32_t strLng, uint32_t *pReqLng)
 {
     uint32_t flag = 0;
@@ -96,8 +134,6 @@ char* ESP_ExtractString(const char* const pKeyWord, char* pBUff, uint32_t buffLn
 uint32_t ESP_ExtractValue(const char* const pKeyWord, char* pBUff, uint32_t buffLng, uint32_t* val)
 {
     char* pBrowse = pBUff;
-
-    char strNum[11] = { 0 };
 
     uint32_t strLng = 0, value = 0, decOrder = 1, keyWordFound = 0;
 

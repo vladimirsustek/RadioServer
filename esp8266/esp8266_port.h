@@ -57,7 +57,6 @@ typedef uint32_t (*U32_pFn_pC_pC_U32_pC_pU32)	(char *, char*, uint32_t, char **,
 
 uint32_t ESP_ComInit(void);
 uint32_t ESP_SendCommand(const char* const pStrCmd, const uint32_t lng);
-uint32_t ESP_CheckReceived(void);
-uint32_t ESP_CheckResponse(char* key, const uint32_t key_lng, uint32_t timeout);
-uint32_t ESP_CheckForKeyWord(char * key, char * buff, uint32_t buff_lng, char **ppRetStr, uint32_t *retVal);
+uint32_t ESP_CheckRX_DMA_XUART(const uint32_t timeout);
+
 #endif /* ESP8266_PORT_H_ */

@@ -41,6 +41,7 @@ static uint8_t counter360ms = 0;
 
 static uint8_t internalStandingStringBUff[NUMBER_OF_ANODES];
 
+TIM_HandleTypeDef htim2;
 
 /* Simple conversion between ASCII and 7-seg
  *
@@ -138,6 +139,14 @@ static uint8_t ASCII27SEG(uint8_t ascii)
 	return encoded;
 }
 
+
+uint32_t LEDC_InitHW(void)
+{
+	uint32_t result = 0;
+	result = (uint32_t)HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+	return result;
+}
+
 uint32_t LEDC_GetRollingStatus(void)
 {
 	return rollingStringBusyFlag;
@@ -216,6 +225,8 @@ uint32_t LEDC_SetNewRollingString(const char * str, uint32_t length)
 	}
 	else
 	{
+		memset(internalStrinBuff, '\0', MAX_STRING_LNG + OFFSET_WHITESPACE + 1 + 1);
+
 		rollingStringBusyFlag = LEDC_RET_BUSY;
 
 		memset(internalStrinBuff, ' ', OFFSET_WHITESPACE/2);
@@ -223,8 +234,6 @@ uint32_t LEDC_SetNewRollingString(const char * str, uint32_t length)
 		memcpy(internalStrinBuff + OFFSET_WHITESPACE/2, str, length);
 
 		memset(internalStrinBuff + length + OFFSET_WHITESPACE/2, ' ', OFFSET_WHITESPACE/2);
-
-		memset(internalStrinBuff + length + 2*OFFSET_WHITESPACE/2, '\0', 1);
 
 		internalStringLentgh = length + OFFSET_WHITESPACE + sizeof('\0');
 
