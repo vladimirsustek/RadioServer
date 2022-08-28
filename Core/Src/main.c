@@ -20,6 +20,7 @@
 #include "main.h"
 #include "dma.h"
 #include "i2c.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "usb_device.h"
@@ -35,6 +36,8 @@
 
 #include "../esp8266/esp8266_http_server.h"
 #include "usbd_cdc_if.h"
+#include "eeprom_25aa1024.h"
+#include "stm32f1xx_hal_conf.h"
 
 /* USER CODE END Includes */
 
@@ -106,10 +109,13 @@ int main(void)
   MX_DMA_Init();
   MX_USB_DEVICE_Init();
   MX_USART3_UART_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
   /* MCU's HW initialized, turn off green LED*/
   BLUEPILL_LED(0);
+
+  EEPROM_Init();
 
   initStateLEDC = LEDC_InitHW();
   initStateESP = ESP_HTTPinit();
@@ -170,6 +176,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK

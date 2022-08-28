@@ -54,17 +54,17 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDC_E_Pin|LEDC_D_Pin|LEDC_DP_Pin|LEDC_C_Pin
-                          |LEDC_B_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SPI1_NCS_Pin|LEDC_A2_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, EEPROM_VCC_Pin|LEDC_A1_Pin|LEDC_A4_Pin|LEDC_A3_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, EEPROM_GND_Pin|LEDC_E_Pin|LEDC_D_Pin|LEDC_DP_Pin
+                          |LEDC_C_Pin|LEDC_B_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LEDC_G_Pin|LEDC_A_Pin|LEDC_F_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LEDC_A2_GPIO_Port, LEDC_A2_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LEDC_A1_Pin|LEDC_A4_Pin|LEDC_A3_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = LED_GREEN_Pin;
@@ -79,10 +79,19 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = SPI1_NCS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(SPI1_NCS_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : PBPin PBPin PBPin PBPin
-                           PBPin PBPin PBPin PBPin */
-  GPIO_InitStruct.Pin = LEDC_E_Pin|LEDC_D_Pin|LEDC_DP_Pin|LEDC_C_Pin
-                          |LEDC_A1_Pin|LEDC_A4_Pin|LEDC_B_Pin|LEDC_A3_Pin;
+                           PBPin PBPin PBPin PBPin
+                           PBPin PBPin */
+  GPIO_InitStruct.Pin = EEPROM_VCC_Pin|EEPROM_GND_Pin|LEDC_E_Pin|LEDC_D_Pin
+                          |LEDC_DP_Pin|LEDC_C_Pin|LEDC_A1_Pin|LEDC_A4_Pin
+                          |LEDC_B_Pin|LEDC_A3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

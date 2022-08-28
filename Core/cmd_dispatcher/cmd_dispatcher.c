@@ -3,6 +3,7 @@
 #include "cmd_rda5807m.h"
 #include "ledc_if.h"
 #include "../esp8266/esp8266_functions.h"
+#include "eeprom_25aa1024.h"
 
 #define CMD_TABLE_SIZE  (uint8_t)(16)
 
@@ -62,6 +63,18 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
     {
     	ESP_SendCommand((char*)(pStrCmd+4), lng-4);
     	return 0;
+    }
+
+    if(!memcmp(pStrCmd, "EEPROM_W_", strlen("EEPROM_W_")))
+    {
+    	EEPROM_WriteData(EEPROM_START_ADDRESS, (uint8_t*)pStrCmd + strlen("EEPROM_W_"), lng - strlen("EEPROM_W_"));
+    }
+
+    if(!memcmp(pStrCmd, "EEPROM_R", strlen("EEPROM_R")))
+    {
+    	uint8_t buff[64] = {0};
+    	EEPROM_ReadData(EEPROM_START_ADDRESS, buff, 64);
+    	printf("%s", (char*)buff);
     }
 
     /* printf redirected to UART in uart_interface.c*/

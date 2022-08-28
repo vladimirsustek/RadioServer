@@ -65,6 +65,12 @@ void Error_Handler(void);
 #define FLOATING_A_GPIO_Port GPIOA
 #define FLOATING_B_Pin GPIO_PIN_3
 #define FLOATING_B_GPIO_Port GPIOA
+#define SPI1_NCS_Pin GPIO_PIN_4
+#define SPI1_NCS_GPIO_Port GPIOA
+#define EEPROM_VCC_Pin GPIO_PIN_0
+#define EEPROM_VCC_GPIO_Port GPIOB
+#define EEPROM_GND_Pin GPIO_PIN_1
+#define EEPROM_GND_GPIO_Port GPIOB
 #define LEDC_E_Pin GPIO_PIN_12
 #define LEDC_E_GPIO_Port GPIOB
 #define LEDC_D_Pin GPIO_PIN_13
