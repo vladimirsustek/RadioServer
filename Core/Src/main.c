@@ -134,7 +134,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-      rxStrBuff = VCOMFetchReceivedLine(&rxStrlng);
+      rxStrBuff = VCOMFetchReceivedLine(&rxStrlng); // hello
 
       if (NULL != rxStrBuff)
       {
