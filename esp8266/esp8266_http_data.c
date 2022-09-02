@@ -5,7 +5,6 @@
  *      Author: 42077
  */
 
-
 char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<body>\n\
 				<h1>RDA5807 control page</h1>\n\

@@ -8,10 +8,7 @@
 
 #include "eeprom_25aa1024.h"
 
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
-
+/* STM32 typical SPI handle */
 SPI_HandleTypeDef hspi1;
 
 uint32_t SPI1_NCSactivate(void)
@@ -123,7 +120,8 @@ uint32_t EEPROM_Init(void)
 {
 	uint32_t result[2] = {0};
 
-	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
+	/* Turn on the GPIOs powering the EEPROM module */
+	//HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(EEPROM_GND_GPIO_Port, EEPROM_GND_Pin, GPIO_PIN_RESET);
 
 	if (0 == result[0] && 0 == result[1])
@@ -132,7 +130,7 @@ uint32_t EEPROM_Init(void)
 		return (uint32_t)(-1);
 }
 
-uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t Size)
+static uint32_t EEPROM_WriteDataNoLogic(uint32_t address, uint8_t* pData, uint16_t Size)
 {
 	uint32_t result[5] = {0};
 	uint8_t startWrite[4];
@@ -162,6 +160,55 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t Size)
 
 }
 
+uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t size)
+{
+	uint8_t status = 0;
+	uint16_t result = 0;
+
+	uint16_t neareastAdress = address - (address % EEPROM_PAGE_SIZE);
+	uint16_t offSet = address - neareastAdress;
+	uint16_t bytesToWrite = size;
+	uint16_t maxCycleSize = EEPROM_PAGE_SIZE - (address % EEPROM_PAGE_SIZE);
+    uint16_t cycleSize = (bytesToWrite > maxCycleSize) ? maxCycleSize : bytesToWrite;
+
+    /* Turn on the EEPROM and wait to start up*/
+	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
+
+	while(bytesToWrite)
+	{
+		result += EEPROM_WriteDataNoLogic(
+				(uint32_t)neareastAdress + offSet,
+				pData + (size - bytesToWrite),
+				cycleSize
+				);
+
+		HAL_Delay(10);
+		result += EEPROM_ReadStatusRegister(&status);
+
+		if(0 != status)
+		{
+			result = (uint16_t)(-1);
+			break;
+		}
+
+	    bytesToWrite -= cycleSize;
+	    neareastAdress += EEPROM_PAGE_SIZE;
+	    address = neareastAdress;
+	    offSet = address - neareastAdress;
+	    maxCycleSize = EEPROM_PAGE_SIZE - (address % EEPROM_PAGE_SIZE);
+	    cycleSize = (bytesToWrite > EEPROM_PAGE_SIZE) ? EEPROM_PAGE_SIZE : bytesToWrite;
+	}
+
+	result = (result != 0) ? -1 : 0;
+
+    /* Turn off the EEPROM */
+	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_RESET);
+
+	return result;
+}
+
+
 uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 {
 	uint32_t result[5] = {0};
@@ -173,6 +220,10 @@ uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 	{
 		return (uint32_t)(-1);
 	}
+
+    /* Turn on the EEPROM and wait to start up*/
+	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
+	HAL_Delay(100);
 
 	startWrite[0] = EEPROM_READ;
 	startWrite[1] = (address && 0x00FF0000) >> 16;
@@ -188,5 +239,8 @@ uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 		return 0u;
 	else
 		return (uint32_t)(-1);
+
+    /* Turn off the EEPROM*/
+	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_RESET);
 
 }

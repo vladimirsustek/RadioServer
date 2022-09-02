@@ -37,6 +37,8 @@
 #define STATUS_WIP				(uint8_t)(1)
 #define STATUS_WEN				(uint8_t)(2)
 
+#define EEPROM_PAGE_SIZE		(uint16_t)(256u)
+
 uint32_t EEPROM_Init(void);
 uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t Size);
 uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size);

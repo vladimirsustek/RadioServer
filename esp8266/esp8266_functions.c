@@ -7,7 +7,7 @@
 
 #include "esp8266_functions.h"
 
-#define PRINT_EACH_RECEIVE 0
+#define PRINT_EACH_RECEIVE 1
 
 extern char comUsrBuffer[COM_USR_RX_MESSAGES_MAX][ESP_COM_BUFF_LNG + 1];
 extern uint32_t comUsrBufferLen[COM_USR_RX_MESSAGES_MAX];

@@ -93,7 +93,7 @@ char* IsESP_httpRequest(char* pStr, uint32_t strLng, uint32_t *pReqLng)
 }
 
 
-char* ESP_ExtractString(const char* const pKeyWord, char* pBUff, uint32_t buffLng, uint32_t *strLng)
+char* ESP_ExtractString(char* pKeyWord, char* pBUff, uint32_t buffLng, uint32_t *strLng)
 {
     char* pBrowse = pBUff;
 
@@ -131,7 +131,7 @@ char* ESP_ExtractString(const char* const pKeyWord, char* pBUff, uint32_t buffLn
     return pBrowse;
 }
 
-uint32_t ESP_ExtractValue(const char* const pKeyWord, char* pBUff, uint32_t buffLng, uint32_t* val)
+uint32_t ESP_ExtractValue(char* pKeyWord, char* pBUff, uint32_t buffLng, uint32_t* val)
 {
     char* pBrowse = pBUff;
 

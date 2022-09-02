@@ -16,7 +16,8 @@
 
 uint32_t ESP_CheckForKeyWord(char * key, char * buff, uint32_t buff_lng, char **ppRetStr, uint32_t *retVal);
 char* IsESP_httpRequest(char* pStr, uint32_t strLng, uint32_t *pReqLng);
-char* ESP_ExtractString(const char* const pKeyWord, char* pBUff, uint32_t buffLng, uint32_t *strLng);
-uint32_t ESP_ExtractValue(const char* const pKeyWord, char* pBUff, uint32_t buffLng, uint32_t* val);
+char* ESP_ExtractString(char* pKeyWord, char* pBUff, uint32_t buffLng, uint32_t *strLng);
+uint32_t ESP_ExtractValue(char* pKeyWord, char* pBUff, uint32_t buffLng, uint32_t* val);
+
 
 #endif /* ESP8266_UTILS_H_ */

@@ -65,16 +65,35 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint8_t lng) {
     	return 0;
     }
 
-    if(!memcmp(pStrCmd, "EEPROM_W_", strlen("EEPROM_W_")))
+    if(!memcmp(pStrCmd, "EEPROM_W_", strlen("EEPROM_W_")) && lng > strlen("EEPROM_W_ADR_000000_"))
     {
-    	EEPROM_WriteData(EEPROM_START_ADDRESS, (uint8_t*)pStrCmd + strlen("EEPROM_W_"), lng - strlen("EEPROM_W_"));
+    	// EEPROM_W_ADR_000000_
+    	uint32_t addr = 0;
+    	ESP_ExtractValue("ADR_", (const uint8_t*)pStrCmd, lng, &addr);
+    	EEPROM_WriteData(
+    			addr,
+				(uint8_t*)pStrCmd + strlen("EEPROM_W_ADR_000000_"),
+				lng - strlen("EEPROM_W_ADR_000000_")
+				);
     }
 
-    if(!memcmp(pStrCmd, "EEPROM_R", strlen("EEPROM_R")))
+    if(!memcmp(pStrCmd, "EEPROM_R", strlen("EEPROM_R")) && lng > strlen("EEPROM_R_ADR_000000_LNG_000000"))
     {
-    	uint8_t buff[64] = {0};
-    	EEPROM_ReadData(EEPROM_START_ADDRESS, buff, 64);
-    	printf("%s", (char*)buff);
+    	// EEPROM_R_ADR_000000_LNG_000000
+    	uint32_t addr = 0, readLng = 0;
+    	uint8_t auxBuff[EEPROM_PAGE_SIZE] = {0};
+    	ESP_ExtractValue("ADR_", (const uint8_t*)pStrCmd, lng, &addr);
+    	ESP_ExtractValue("LNG_", (const uint8_t*)pStrCmd, lng, &readLng);
+
+    	uint16_t subLng = (readLng > EEPROM_PAGE_SIZE) ? EEPROM_PAGE_SIZE : readLng;
+
+    	while(readLng)
+    	{
+        	EEPROM_ReadData(addr, auxBuff, subLng);
+        	readLng -= subLng;
+        	printf("%s", (char*)auxBuff);
+        	HAL_Delay(100);
+    	}
     }
 
     /* printf redirected to UART in uart_interface.c*/
