@@ -143,9 +143,9 @@ static uint32_t EEPROM_WriteDataNoLogic(uint32_t address, uint8_t* pData, uint16
 	}
 
 	startWrite[0] = EEPROM_WRITE;
-	startWrite[1] = (address && 0x00FF0000) >> 16;
-	startWrite[2] = (address && 0x0000FF00) >> 8;
-	startWrite[3] = (address && 0x000000FF);
+	startWrite[1] = (address & 0x00FF0000) >> 16;
+	startWrite[2] = (address & 0x0000FF00) >> 8;
+	startWrite[3] = (address & 0x000000FF);
 
 	result[0] = EEPROM_WriteEnable();
 	result[1] = SPI1_NCSactivate();
@@ -171,7 +171,7 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t size)
 	uint16_t maxCycleSize = EEPROM_PAGE_SIZE - (address % EEPROM_PAGE_SIZE);
     uint16_t cycleSize = (bytesToWrite > maxCycleSize) ? maxCycleSize : bytesToWrite;
 
-    /* Turn on the EEPROM and wait to start up*/
+    /* Turn on the EEPROM and wait (just guessed 100ms )to start up*/
 	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
 
@@ -221,14 +221,14 @@ uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 		return (uint32_t)(-1);
 	}
 
-    /* Turn on the EEPROM and wait to start up*/
+    /* Turn on the EEPROM and wait (just guessed 100ms )to start up*/
 	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
 
 	startWrite[0] = EEPROM_READ;
-	startWrite[1] = (address && 0x00FF0000) >> 16;
-	startWrite[2] = (address && 0x0000FF00) >> 8;
-	startWrite[3] = (address && 0x000000FF);
+	startWrite[1] = (address & 0x00FF0000) >> 16;
+	startWrite[2] = (address & 0x0000FF00) >> 8;
+	startWrite[3] = (address & 0x000000FF);
 
 	result[1] = SPI1_NCSactivate();
 	result[2] = EEPROM_WriteOperation(startWrite, 4);

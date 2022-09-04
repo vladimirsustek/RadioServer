@@ -23,6 +23,7 @@
 #define CMD_RET_OK          ((uint16_t)(0x0))
 #define CMD_RET_ERR         ((uint16_t)(0xFFFF))
 #define CMD_RET_UKN         ((uint16_t)(0xF0F0))
+#define CMD_CUSTOM			((uint16_t)(0x5A5A))
 
 typedef uint16_t (*pfn_u8_cpuc8cu8)(const uint8_t* const, const uint8_t lng);
 
