@@ -9,7 +9,11 @@
 #define EEPROM_25AA1024_H_
 
 #include "stdint.h"
+#include "stdio.h"
+#include "string.h"
+
 #include "spi.h"
+
 
 #define EEPROM_READ		(uint8_t)(0b00000011) // Read data from memory array beginning at the selected address
 #define EEPROM_WRITE	(uint8_t)(0b00000010) // Write data to memory array beginning at the selected address
@@ -44,4 +48,6 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t Size);
 uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size);
 uint32_t EEPROM_ReadStatusRegister(uint8_t *ret);
 uint32_t EEPROM_WriteStatusRegister(uint8_t value);
+uint16_t Cmd25AA1024WrBytes(const uint8_t* const cmd, const uint16_t lng);
+uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng);
 #endif /* EEPROM_25AA1024_H_ */

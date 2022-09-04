@@ -4,12 +4,28 @@
  *  Created on: Aug 28, 2022
  *      Author: 42077
  */
-
-
 #include "eeprom_25aa1024.h"
 
 /* STM32 typical SPI handle */
 SPI_HandleTypeDef hspi1;
+
+#define ESP_RESULT_CUSTOM 		((uint16_t)(0x5A5A))
+#define EEPROM_R_ERROR			(char*)("EEPROM_R_ERROR\r\n")
+#define EEPROM_W_ERROR			(char*)("EEPROM_W_ERROR\r\n")
+
+#define ESP_CMD_ADR (uint8_t*)"ADR_"
+#define ESP_CMD_LNG (uint8_t*)"LNG_"
+
+#define EEPROM_W_CMD_OFFSET		(uint16_t)(strlen("EE_WRBT_ADR_000000_"))
+#define EEPROM_R_CMD_OFFSET		(uint16_t)(strlen("EE_RDBT_ADR_000000_LNG_000000_"))
+
+#define IS_NUM(x)   ((x) >= '0' && (x) <= '9')
+
+static uint32_t ExtractValue(const uint8_t* const pKeyWord,
+		const uint8_t* const pBUff,
+		const uint32_t buffLng,
+		uint32_t* val);
+
 
 uint32_t SPI1_NCSactivate(void)
 {
@@ -211,8 +227,8 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t size)
 
 uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 {
+	uint8_t startWrite[4];
 	uint32_t result[5] = {0};
-	uint8_t startWrite[5];
 
 	if((address > EEPROM_STOP_ADDRESS) ||
 			(address < EEPROM_START_ADDRESS) ||
@@ -244,3 +260,134 @@ uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_RESET);
 
 }
+
+
+uint16_t Cmd25AA1024WrBytes(const uint8_t* const cmd, const uint16_t lng)
+{
+	// expected e.g. EEPROM_W_ADR_000000_HelloWorld
+	uint16_t result = (uint16_t)(-1);
+	uint16_t payloadLng = lng - EEPROM_W_CMD_OFFSET;
+
+	uint32_t addr = 0;
+	uint32_t subResult = (uint32_t)(-1);
+
+	ExtractValue(ESP_CMD_ADR, cmd, lng, &addr);
+
+	subResult = EEPROM_WriteData(
+			addr,
+			(uint8_t*)cmd + EEPROM_W_CMD_OFFSET,
+			payloadLng
+			);
+
+	if(0 == subResult)
+	{
+    	printf("EEPROM_W address %ld = 0x%06lx : %d bytes\r\n",
+    			addr,
+				addr,
+				lng - EEPROM_W_CMD_OFFSET);
+
+    	result = ESP_RESULT_CUSTOM;
+
+	}
+	else
+	{
+    	printf(EEPROM_W_ERROR);
+	}
+
+	return result;
+}
+
+uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng)
+{
+	// expected e.g. EEPROM_R_ADR_000000_LNG_000012 (To read HelloWorld\r\n)
+	// if was previously sucessfully done EEPROM_W_ADR_000000_HelloWorld\r\n
+
+	uint8_t auxBuff[EEPROM_PAGE_SIZE] = {0};
+
+	uint16_t result = (uint16_t)(-1);
+	uint16_t subLng = 0;
+
+	uint32_t addr = 0;
+	uint32_t readLng = 0;
+	uint32_t subResult = (uint32_t)(-1);
+
+	ExtractValue(ESP_CMD_ADR, cmd, lng, &addr);
+	ExtractValue(ESP_CMD_LNG, cmd, lng, &readLng);
+
+	subLng = (readLng > EEPROM_PAGE_SIZE) ? EEPROM_PAGE_SIZE : readLng;
+
+	while(readLng)
+	{
+		subResult = EEPROM_ReadData(addr, auxBuff, subLng);
+    	readLng -= subLng;
+    	printf("%s", (char*)auxBuff);
+    	HAL_Delay(100);
+	}
+
+	if(0 != subResult)
+	{
+    	printf(EEPROM_R_ERROR);
+	}
+	else
+	{
+		result = ESP_RESULT_CUSTOM;
+	}
+
+	return result;
+}
+
+uint32_t ExtractValue(const uint8_t* const pKeyWord,
+		const uint8_t* const pBUff,
+		const uint32_t buffLng,
+		uint32_t* val)
+{
+    const uint8_t* pBrowse = pBUff;
+
+    uint32_t strLng = 0, value = 0, decOrder = 1, keyWordFound = 0;
+
+    /* Is keyword in pBUff ? */
+    for (uint32_t idx = 0; idx < buffLng; idx++)
+    {
+        if (!memcmp(pBrowse, (char*)pKeyWord, strlen((char*)pKeyWord)))
+        {
+            keyWordFound = 1;
+            break;
+        }
+        (char*)(pBrowse++);
+    }
+
+    //if ((!keyWordFound) || ((pBUff - pBrowse) >= buffLng))
+    if (!keyWordFound)
+    {
+        /* Keyword is either not found or there is no data after keyword*/
+        *val = 0;
+        return 0;
+    }
+
+    /* Move pBrowse on the number */
+    pBrowse = (uint8_t*)(pBrowse + strlen((char*)pKeyWord));
+
+    for (uint32_t idx = 0; IS_NUM(pBrowse[idx]); idx++)
+    {
+        strLng++;
+    }
+
+    /* Create highest decimal order of the string */
+    for (uint32_t idx = 0; idx < strLng - 1; idx++)
+    {
+        decOrder = decOrder * 10;
+    }
+
+    /* Go from left to right through the string and create the int value */
+    for (uint32_t idx = 0; idx < strLng; idx++)
+    {
+        value += (pBrowse[idx] - '0') * decOrder;
+
+        decOrder = decOrder / 10;
+    }
+
+    *val = value;
+
+    return keyWordFound;
+}
+

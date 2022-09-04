@@ -25,13 +25,13 @@
 #define CMD_RET_UKN         ((uint16_t)(0xF0F0))
 #define CMD_CUSTOM			((uint16_t)(0x5A5A))
 
-typedef uint16_t (*pfn_u8_cpuc8cu8)(const uint8_t* const, const uint8_t lng);
+typedef uint16_t (*pfn_u16_cpuc8cu16)(const uint8_t* const, const uint16_t lng);
 
 typedef struct CmdDisp {
 
     uint8_t cmdMethod[CMD_METHOD_LNG];
     uint8_t cmdName[CMD_NAME_LNG];
-    pfn_u8_cpuc8cu8 cmdFunc;
+    pfn_u16_cpuc8cu16 cmdFunc;
 } CmdDisp_t;
 
 #endif // CMD_DEFS_H_INCLUDED

@@ -5,14 +5,11 @@
 #include "../esp8266/esp8266_functions.h"
 #include "eeprom_25aa1024.h"
 
-#define CMD_TABLE_SIZE  (uint8_t)(16)
-
-#warning moveSomewhereElse
-#define EEPROM_W_CMD_OFFSET		(uint32_t)(strlen("EEPROM_W_ADR_000000_"))
-#define EEPROM_R_CMD_OFFSET		(uint32_t)(strlen("EEPROM_W_ADR_000000_LNG_000000_"))
+#define CMD_TABLE_SIZE  (uint8_t)(20)
 
 static const CmdDisp_t cmdTable[CMD_TABLE_SIZE] = {
 
+/* RDA5807M radio commands ------------------------------------*/
 /*01*/    {CMD_METHOD_DO,  CMD_RDA5807M_INIT, CmdRDA5807mDoInit},
 /*02*/    {CMD_METHOD_DO,  CMD_RDA5807M_RSET, CmdRDA5807mDoReset},
 
@@ -32,7 +29,15 @@ static const CmdDisp_t cmdTable[CMD_TABLE_SIZE] = {
 /*14*/    {CMD_METHOD_GET, CMD_RDA5807M_BLKD, CmdRDA5807mGetBLKD},
 
 /*15*/    {CMD_METHOD_GET, CMD_RDA5807M_ERRA, CmdRDA5807mGetERRA},
-/*16*/    {CMD_METHOD_GET, CMD_RDA5807M_ERRB, CmdRDA5807mGetERRB}
+/*16*/    {CMD_METHOD_GET, CMD_RDA5807M_ERRB, CmdRDA5807mGetERRB},
+
+/* ESP8266 commands --------------------------------------------*/
+/*17*/    {CMD_METHOD_ATS, CMD_ESP8266_ATSET, CmdESPConsoleATCmd},
+/*18*/    {CMD_METHOD_ATS, CMD_ESP8266_STRWR, CmdESPConsoleWrStr},
+
+/* 25AA1024 commands -------------------------------------------*/
+/*19*/    {CMD_METHOD_EES, CMD_25AAXXX_WBYTE, Cmd25AA1024WrBytes},
+/*20*/    {CMD_METHOD_EEG, CMD_25AAXXX_RBYTE, Cmd25AA1024RdBytes}
 
 };
 
@@ -51,90 +56,6 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint16_t lng) {
             break;
         }
     }
-
-    /*Testing interface for ESP8266*/
-    if('A' == pStrCmd[0] && 'T' ==  pStrCmd[1])
-    {
-    	char buff[64] = {0};
-    	char buff2[64] = {0};
-    	memcpy(buff, pStrCmd, lng);
-    	buff[lng - 1] = '\0';
-    	sprintf(buff2, "%s", pStrCmd);
-    	ESP_SendCommand((char*)pStrCmd, lng);
-    	return 0;
-    }
-    if(!memcmp(pStrCmd, "STR_", strlen("STR_")))
-    {
-    	ESP_SendCommand((char*)(pStrCmd+4), lng-4);
-    	return 0;
-    }
-
-    if(!memcmp(pStrCmd, "EEPROM_W_", strlen("EEPROM_W_")) && lng > EEPROM_W_CMD_OFFSET)
-    {
-    	// expected e.g. EEPROM_W_ADR_000000_HelloWorld
-    	uint32_t addr = 0;
-    	uint32_t subResult = (uint32_t)(-1);
-    	const uint16_t payloadLng = lng - EEPROM_W_CMD_OFFSET;
-
-    	ESP_ExtractValue("ADR_", pStrCmd, lng, &addr);
-
-    	subResult = EEPROM_WriteData(
-    			addr,
-				(uint8_t*)pStrCmd + EEPROM_W_CMD_OFFSET,
-				payloadLng
-				);
-
-    	if(0 == subResult)
-    	{
-        	sprintf(strBuff, "%ld bytes", lng - EEPROM_W_CMD_OFFSET);
-        	printf("EEPROM_W address %ld = 0x%06lx : %ld bytes\r\n",
-        			addr,
-					addr,
-					lng - EEPROM_W_CMD_OFFSET);
-    	}
-    	else
-    	{
-        	printf("EEPROM_W error\r\n");
-    	}
-
-
-    	result = CMD_CUSTOM;
-
-    }
-
-    if(!memcmp(pStrCmd, "EEPROM_R", strlen("EEPROM_R")) && lng > EEPROM_R_CMD_OFFSET)
-    {
-    	// expected e.g. EEPROM_R_ADR_000000_LNG_000012 (To read HelloWorld\r\n)
-    	// if was previously sucessfully done EEPROM_W_ADR_000000_HelloWorld\r\n
-
-    	uint8_t auxBuff[EEPROM_PAGE_SIZE] = {0};
-
-    	uint32_t addr = 0;
-    	uint32_t readLng = 0;
-    	uint32_t subResult = (uint32_t)(-1);
-    	uint16_t subLng = 0;
-
-    	ESP_ExtractValue("ADR_", pStrCmd, lng, &addr);
-    	ESP_ExtractValue("LNG_", pStrCmd, lng, &readLng);
-
-    	subLng = (readLng > EEPROM_PAGE_SIZE) ? EEPROM_PAGE_SIZE : readLng;
-
-    	while(readLng)
-    	{
-    		subResult = EEPROM_ReadData(addr, auxBuff, subLng);
-        	readLng -= subLng;
-        	printf("%s", (char*)auxBuff);
-        	HAL_Delay(100);
-    	}
-
-    	if(0 != subResult)
-    	{
-        	printf("EEPROM_R error\r\n");
-    	}
-
-    	result = CMD_CUSTOM;
-    }
-
     /* printf redirected to UART in uart_interface.c*/
 #if OLD_LONG_RESPONSE
     sprintf(strBuff, "<< %s  >> RET = 0x%04x\n", pStrCmd, result);

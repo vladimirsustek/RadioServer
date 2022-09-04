@@ -14,6 +14,56 @@ extern uint32_t comUsrBufferLen[COM_USR_RX_MESSAGES_MAX];
 extern uint32_t comUserBufferMsgIdx;
 extern uint32_t comUserBufferMsgReadIdx;
 
+/*Testing interface for ESP8266
+if('A' == pStrCmd[0] && 'T' ==  pStrCmd[1])
+{
+	char buff[64] = {0};
+	char buff2[64] = {0};
+	memcpy(buff, pStrCmd, lng);
+	buff[lng - 1] = '\0';
+	sprintf(buff2, "%s", pStrCmd);
+	ESP_SendCommand((char*)pStrCmd, lng);
+	return 0;
+}
+if(!memcmp(pStrCmd, "STR_", strlen("STR_")))
+{
+	ESP_SendCommand((char*)(pStrCmd+4), lng-4);
+	return 0;
+}
+*/
+
+#ifndef CMD_METHOD_ATS
+#define CMD_METHOD_ATS  "AT"
+#endif
+
+#ifndef CMD_ESP8266_ATSET
+#define CMD_ESP8266_ATSET "ATST"
+#endif
+
+#ifndef CMD_ESP8266_STRWR
+#define CMD_ESP8266_STRWR "STWR"
+#endif
+
+#define CMD_ESP8266_DELIMITER "_"
+
+#define CMD_ESP8266_HEADER_LNG (uint16_t)(strlen(CMD_METHOD_ATS) + \
+								strlen(CMD_ESP8266_DELIMITER) + \
+								strlen(CMD_ESP8266_ATSET) + \
+								strlen(CMD_ESP8266_DELIMITER))
+
+
+uint16_t CmdESPConsoleATCmd(const uint8_t* const cmd, const uint16_t lng)
+{
+	char* auxPtr = (char*)(cmd + CMD_ESP8266_HEADER_LNG);
+	return (uint16_t)ESP_SendCommand(auxPtr, lng - CMD_ESP8266_HEADER_LNG);
+}
+
+uint16_t CmdESPConsoleWrStr(const uint8_t* const str, const uint16_t lng)
+{
+	char* auxPtr = (char*)(str + CMD_ESP8266_HEADER_LNG);
+	return (uint16_t)ESP_SendCommand(auxPtr, lng - CMD_ESP8266_HEADER_LNG);
+}
+
 uint32_t ESP_CheckRX(uint32_t timeOut,
 				     uint32_t blockingTimeOut,
 					 U32_pFn_pC_pC_U32_pC_pU32 processFn,
