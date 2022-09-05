@@ -30,6 +30,7 @@
 #define ESP_HARD_ERR				(uint32_t)(-6)
 #define ESP_RSP_ERR					(uint32_t)(-7)
 #define ESP_TOO_LONG_HTTP			(uint32_t)(-8)
+#define ESP_WIFI_FAILED				(uint32_t)(-9)
 
 #define ESP_DONT_CHECK_RESPONSE_P	(char*)(NULL)
 #define ESP_DONT_CHECK_RESPONSE_V	(uint32_t)(0)
@@ -37,6 +38,7 @@
 #define ESP_TIMEOUT_2s				(uint32_t)(2000u)
 #define ESP_TIMEOUT_1s				(uint32_t)(1000u)
 #define ESP_TIMEOUT_300ms			(uint32_t)(300u)
+#define ESP_TIMEOUT_15s				(uint32_t)(15*1000u)
 
 #define COM_USR_RX_MESSAGES_MAX				(uint32_t)(4u)
 

@@ -8,9 +8,10 @@
 #ifndef LEDC_PORT_H_
 #define LEDC_PORT_H_
 
+#include "stm32f1xx_hal.h"
+
 #include <stdint.h>
 #include <string.h>
-
 
 /*
  * From here down must be file user-defined according to the used hardware
@@ -30,7 +31,6 @@
  * and they should not occupy MCU's time for other useful tasks.
  *
  */
-#include "stm32f1xx_hal.h"
 
 /* Duplicated from main.h */
 #define LEDC_E_Pin GPIO_PIN_12

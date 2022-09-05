@@ -31,19 +31,16 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "cmd_dispatcher.h"
-#include "ledc_if.h"
-
-#include "../esp8266/esp8266_http_server.h"
-#include "usbd_cdc_if.h"
-#include "eeprom_25aa1024.h"
 #include "stm32f1xx_hal_conf.h"
+#include "usbd_cdc_if.h"
 
+#include "esp8266_http_server.h"
+#include "rda5807m.h"
+#include "cmd_dispatcher.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-extern uint32_t ESP_httpInit (void);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -65,6 +62,7 @@ DMA_HandleTypeDef hdma_usart2_rx;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+void MAIN_InfiniteFaultBlink(void);
 void MAIN_ShortcutUSB(void);
 /* USER CODE END PFP */
 
@@ -115,14 +113,13 @@ int main(void)
   /* MCU's HW initialized, turn off green LED*/
   BLUEPILL_LED(0);
 
-  EEPROM_Init();
-
-  initStateLEDC = LEDC_InitHW();
-  initStateESP = ESP_HTTPinit();
-
-  if(initStateESP || initStateLEDC)
+  if(0!= (initStateLEDC = LEDC_InitHW()))
   {
-	  /* Do an error routine */
+	  MAIN_InfiniteFaultBlink();
+  }
+  if(0!= (initStateESP = ESP_HTTPinit()))
+  {
+	  while(1) LEDC_SetNewRollingString("ESP8266 FAULT", strlen("ESP8266 FAULT"));
   }
 
   /* USER CODE END 2 */
@@ -143,7 +140,7 @@ int main(void)
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-      if(ESP_OK == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
+      if(0 == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
       {
           ESP_ProcessHTTP(pHTTPReq, httpReqLng);
       }
@@ -176,7 +173,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -231,6 +227,16 @@ void MAIN_ShortcutUSB(void)
 
 	  __HAL_RCC_GPIOA_CLK_DISABLE();
 }
+
+void MAIN_InfiniteFaultBlink(void)
+{
+	while(1)
+	{
+		HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+		HAL_Delay(100);
+	}
+}
+
 /* USER CODE END 4 */
 
 /**

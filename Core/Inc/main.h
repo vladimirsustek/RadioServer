@@ -96,8 +96,11 @@ void Error_Handler(void);
 #define LEDC_A3_Pin GPIO_PIN_7
 #define LEDC_A3_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+
 #define GPIO_ON_OFF(x) ((x) != 1 ? GPIO_PIN_SET : GPIO_PIN_RESET)
+
 #define BLUEPILL_LED(x) (HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_ON_OFF(x)))
+#define BLUEPILL_TOGLE_LED() (HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin))
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

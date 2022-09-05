@@ -1,8 +1,7 @@
 #ifndef CMD_RDA5807M_H_INCLUDED
 #define CMD_RDA5807M_H_INCLUDED
 
-#include "../rda5807m/rda5807m.h"
-#include "cmd_defs.h"
+#include "rda5807m.h"
 
 uint16_t CmdRDA5807mDoInit(const uint8_t* const pStrCmd, const uint16_t lng);
 uint16_t CmdRDA5807mDoReset(const uint8_t* const pStrCmd, const uint16_t lng);

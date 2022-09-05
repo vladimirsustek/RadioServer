@@ -10,56 +10,84 @@
 
 #define STATIC_IP_AND_NEW_WIFI 0
 
+#define atCmd_CWJAP_LNG		(uint32_t)(strlen("AT+CWJAP="))
+
 static char httpReqBuff[MAX_HTTP_REQ_SIZE + 1] = {0};
+
 
 uint32_t ESP_HTTPinit (void)
 {
 
-	uint32_t result[10] = {0};
+	uint32_t result = 0;
+	uint32_t subResult = 0;
+	uint8_t pSSIDpassword[EEPROM_PAGE_SIZE/2];
 
-	result[0] = ESP_ComInit();
+	// UART init and activate-deactivate RST pin of ESP8266
+	if(ESP_ComInit()) result++;
 
-	result[1] = LEDC_SetNewStandingText("ESPI");
+    // Inform that WIFI connection is being established
+	if(LEDC_SetNewStandingText("ESPI")) result++;
 
+	// Software reset
     ESP_SendCommand(atCmd_RST, strlen(atCmd_RST));
-    result[2] = ESP_CheckResponse((char*)atRsp_ready, strlen(atRsp_ready), ESP_TIMEOUT_2s);
+    if(ESP_CheckResponse((char*)atRsp_ready, strlen(atRsp_ready), ESP_TIMEOUT_2s)) result++;
 
-	/********* AT **********/
+    // Disconnecting from current WIFI
+    ESP_SendCommand(atCmd_CWQAP, strlen(atCmd_CWQAP));
+    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_2s)) result++;
+
+    // Iterative attempt to connect with predefined EEPROM stored WIFIs
+    for (uint32_t adr = EEPROM_WIFI_ADR_0;
+    		adr <= EEPROM_WIFI_ADR_3;
+    		adr += EEPROM_PAGE_SIZE/2)
+    {
+    	uint8_t* wifi = EEPROM_GetWIfi(adr, atCmd_CWJAP_LNG, pSSIDpassword);
+
+    	// If no WIFI fetched
+    	if (NULL == wifi)
+    	{
+    		// Attempt set unsuccessful and force a next read
+    		subResult = (uint32_t)(-1);
+    		continue;
+    	}
+		memcpy(wifi, atCmd_CWJAP, atCmd_CWJAP_LNG);
+
+		ESP_SendCommand((char*)wifi, strlen((char*)wifi));
+		subResult = ESP_CheckResponse((char*)atRsp_WifiGotIp,
+				strlen(atRsp_WifiGotIp),
+				ESP_TIMEOUT_15s);
+		if (0 == subResult)
+		{
+			break;
+		}
+    }
+
+    if (0 != subResult)
+    {
+    	return ESP_WIFI_FAILED;
+    }
+
+	/********* AT (just testing no-set/no-get command)**********/
     ESP_SendCommand(atCmd, strlen(atCmd));
-    result[3] = ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms);
-
+    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
 	/********* AT+CWMODE=1 **********/
     ESP_SendCommand(atCmd_CWMODE, strlen(atCmd_CWMODE));
-    result[4] = ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms);
+    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
-#if STATIC_IP_AND_NEW_WIFI
-	/* Set Static IP Address */
-	/********* AT+CWSTAIP=IPADDRESS **********/
-    ESP_SendCommand(atCmd_CWSTAIP, strlen(atCmd_CIPSTA));
-    result[5] = ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms);
-
-    /* Connect to WIFI */
-	/********* AT+CWJAP="SSID","PASSWD" **********/
-    ESP_SendCommand(atCmd_CWJAP, strlen(atCmd_CWJAP));
-    result[6] = ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), 2*ESP_TIMEOUT_2s);
-#endif
 	/********* AT+CIPMUX **********/
     ESP_SendCommand(atCmd_CIPMUX, strlen(atCmd_CIPMUX));
-    result[7] = ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms);
+    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
 	/********* AT+CIPSERVER **********/
     ESP_SendCommand(atCmd_CIPSERVER, strlen(atCmd_CIPSERVER));
-    result[8] = ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms);
+    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
-    result[9] = LEDC_StopStandingText();
+    if(LEDC_StopStandingText()) result++;
 
-    for (uint32_t idx = 0; idx < 8; idx++)
-    {
-    	if (result[idx] != 0)
-    		return ESP_HARD_ERR;
-    }
-    return ESP_OK;
+    result = (result) ? ESP_HARD_ERR : ESP_OK;
+
+    return result;
 }
 
 

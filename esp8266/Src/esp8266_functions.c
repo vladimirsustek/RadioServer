@@ -9,28 +9,11 @@
 
 #define PRINT_EACH_RECEIVE 1
 
+/* Direct access to MDA controlled */
 extern char comUsrBuffer[COM_USR_RX_MESSAGES_MAX][ESP_COM_BUFF_LNG + 1];
 extern uint32_t comUsrBufferLen[COM_USR_RX_MESSAGES_MAX];
 extern uint32_t comUserBufferMsgIdx;
 extern uint32_t comUserBufferMsgReadIdx;
-
-/*Testing interface for ESP8266
-if('A' == pStrCmd[0] && 'T' ==  pStrCmd[1])
-{
-	char buff[64] = {0};
-	char buff2[64] = {0};
-	memcpy(buff, pStrCmd, lng);
-	buff[lng - 1] = '\0';
-	sprintf(buff2, "%s", pStrCmd);
-	ESP_SendCommand((char*)pStrCmd, lng);
-	return 0;
-}
-if(!memcmp(pStrCmd, "STR_", strlen("STR_")))
-{
-	ESP_SendCommand((char*)(pStrCmd+4), lng-4);
-	return 0;
-}
-*/
 
 #ifndef CMD_METHOD_ATS
 #define CMD_METHOD_ATS  "AT"
@@ -51,17 +34,30 @@ if(!memcmp(pStrCmd, "STR_", strlen("STR_")))
 								strlen(CMD_ESP8266_ATSET) + \
 								strlen(CMD_ESP8266_DELIMITER))
 
+#ifndef CMD_CUSTOM
+#define CMD_CUSTOM			((uint16_t)(0x5A5A))
+#endif
 
 uint16_t CmdESPConsoleATCmd(const uint8_t* const cmd, const uint16_t lng)
 {
+	uint16_t subResult;
 	char* auxPtr = (char*)(cmd + CMD_ESP8266_HEADER_LNG);
-	return (uint16_t)ESP_SendCommand(auxPtr, lng - CMD_ESP8266_HEADER_LNG);
+
+	subResult = ESP_SendCommand(auxPtr, lng - CMD_ESP8266_HEADER_LNG);
+	subResult = (0 == subResult) ? CMD_CUSTOM : (uint16_t)(-1);
+
+	return subResult;
 }
 
 uint16_t CmdESPConsoleWrStr(const uint8_t* const str, const uint16_t lng)
 {
+	uint16_t subResult;
 	char* auxPtr = (char*)(str + CMD_ESP8266_HEADER_LNG);
-	return (uint16_t)ESP_SendCommand(auxPtr, lng - CMD_ESP8266_HEADER_LNG);
+
+	subResult = ESP_SendCommand(auxPtr, lng - CMD_ESP8266_HEADER_LNG);
+	subResult = (0 == subResult) ? CMD_CUSTOM : (uint16_t)(-1);
+
+	return subResult;
 }
 
 uint32_t ESP_CheckRX(uint32_t timeOut,

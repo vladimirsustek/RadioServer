@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "stm32f1xx_hal.h"
-
+#include "cmd_defs.h"
 /*********** RDA5807m Hardware - register defines *************/
 /* Fixed address of the RDA5807m chip*/
 #define RDA5807M_I2C_ADR	    (uint8_t)(0x20)

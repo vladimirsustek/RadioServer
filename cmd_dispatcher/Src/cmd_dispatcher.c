@@ -1,9 +1,4 @@
-#include "cmd_commands.h"
-#include "cmd_defs.h"
-#include "cmd_rda5807m.h"
-#include "ledc_if.h"
-#include "../esp8266/esp8266_functions.h"
-#include "eeprom_25aa1024.h"
+#include "cmd_dispatcher.h"
 
 #define CMD_TABLE_SIZE  (uint8_t)(20)
 
@@ -66,7 +61,7 @@ uint16_t CmdDispatch(const uint8_t* const pStrCmd, const uint16_t lng) {
     case CMD_RET_UKN: { sprintf(strBuff, "CMD_RET_UKN"); } break;
     case CMD_RET_ERR: { sprintf(strBuff, "CMD_RET_ERR"); } break;
     case CMD_RET_OK: { sprintf(strBuff, "%s", pStrCmd); } break;
-    case CMD_CUSTOM : {/*Do not touch strBuff*/} break;
+    case CMD_CUSTOM: {} break;
     default : {  sprintf(strBuff, "TBD"); }
     }
 #endif

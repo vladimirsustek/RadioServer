@@ -9,17 +9,21 @@
 /* STM32 typical SPI handle */
 SPI_HandleTypeDef hspi1;
 
-#define ESP_RESULT_CUSTOM 		((uint16_t)(0x5A5A))
+#define ESP_RESULT_CUSTOM 		(uint16_t)(0x5A5A)
 #define EEPROM_R_ERROR			(char*)("EEPROM_R_ERROR\r\n")
 #define EEPROM_W_ERROR			(char*)("EEPROM_W_ERROR\r\n")
 
-#define ESP_CMD_ADR (uint8_t*)"ADR_"
-#define ESP_CMD_LNG (uint8_t*)"LNG_"
+#define ESP_CMD_ADR 			(uint8_t*)"ADR_"
+#define ESP_CMD_LNG 			(uint8_t*)"LNG_"
 
 #define EEPROM_W_CMD_OFFSET		(uint16_t)(strlen("EE_WRBT_ADR_000000_"))
 #define EEPROM_R_CMD_OFFSET		(uint16_t)(strlen("EE_RDBT_ADR_000000_LNG_000000_"))
 
 #define IS_NUM(x)   ((x) >= '0' && (x) <= '9')
+
+#ifndef CMD_CUSTOM
+#define CMD_CUSTOM			((uint16_t)(0x5A5A))
+#endif
 
 static uint32_t ExtractValue(const uint8_t* const pKeyWord,
 		const uint8_t* const pBUff,
@@ -146,6 +150,7 @@ uint32_t EEPROM_Init(void)
 		return (uint32_t)(-1);
 }
 
+/*Write across the 256-byte page not handled */
 static uint32_t EEPROM_WriteDataNoLogic(uint32_t address, uint8_t* pData, uint16_t Size)
 {
 	uint32_t result[5] = {0};
@@ -181,10 +186,11 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t size)
 	uint8_t status = 0;
 	uint16_t result = 0;
 
-	uint16_t neareastAdress = address - (address % EEPROM_PAGE_SIZE);
-	uint16_t offSet = address - neareastAdress;
+	uint32_t neareastAdress = address - (address % EEPROM_PAGE_SIZE);
+	uint32_t offSet = address - neareastAdress;
+	uint32_t maxCycleSize = EEPROM_PAGE_SIZE - (address % EEPROM_PAGE_SIZE);
+
 	uint16_t bytesToWrite = size;
-	uint16_t maxCycleSize = EEPROM_PAGE_SIZE - (address % EEPROM_PAGE_SIZE);
     uint16_t cycleSize = (bytesToWrite > maxCycleSize) ? maxCycleSize : bytesToWrite;
 
     /* Turn on the EEPROM and wait (just guessed 100ms )to start up*/
@@ -265,7 +271,7 @@ uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 uint16_t Cmd25AA1024WrBytes(const uint8_t* const cmd, const uint16_t lng)
 {
 	// expected e.g. EEPROM_W_ADR_000000_HelloWorld
-	uint16_t result = (uint16_t)(-1);
+
 	uint16_t payloadLng = lng - EEPROM_W_CMD_OFFSET;
 
 	uint32_t addr = 0;
@@ -286,15 +292,15 @@ uint16_t Cmd25AA1024WrBytes(const uint8_t* const cmd, const uint16_t lng)
 				addr,
 				lng - EEPROM_W_CMD_OFFSET);
 
-    	result = ESP_RESULT_CUSTOM;
-
 	}
 	else
 	{
     	printf(EEPROM_W_ERROR);
 	}
 
-	return result;
+	subResult = (subResult == 0) ? CMD_CUSTOM : (uint16_t)(-1);
+
+	return subResult;
 }
 
 uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng)
@@ -304,9 +310,7 @@ uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng)
 
 	uint8_t auxBuff[EEPROM_PAGE_SIZE] = {0};
 
-	uint16_t result = (uint16_t)(-1);
 	uint16_t subLng = 0;
-
 	uint32_t addr = 0;
 	uint32_t readLng = 0;
 	uint32_t subResult = (uint32_t)(-1);
@@ -320,7 +324,7 @@ uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng)
 	{
 		subResult = EEPROM_ReadData(addr, auxBuff, subLng);
     	readLng -= subLng;
-    	printf("%s", (char*)auxBuff);
+    	printf("%s\r\n", (char*)auxBuff);
     	HAL_Delay(100);
 	}
 
@@ -328,9 +332,47 @@ uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng)
 	{
     	printf(EEPROM_R_ERROR);
 	}
-	else
+
+	subResult = (subResult == 0) ? CMD_CUSTOM : (uint16_t)(-1);
+
+	return subResult;
+}
+
+uint8_t* EEPROM_GetWIfi(uint32_t address, uint32_t offset, uint8_t* pSSIDpassword)
+{
+	uint8_t* result = NULL;
+	uint8_t quotationMarkCnt = 0;
+
+	uint32_t subResult = (uint32_t)(-1);
+	uint16_t idx = 0;
+
+	if(offset <= 32)
 	{
-		result = ESP_RESULT_CUSTOM;
+		subResult = EEPROM_ReadData(address, pSSIDpassword + offset, EEPROM_PAGE_SIZE/2);
+
+		for(idx = 0; idx < EEPROM_PAGE_SIZE/2; idx++)
+		{
+			if (pSSIDpassword[idx + offset] == '\"')
+			{
+				quotationMarkCnt++;
+			}
+			if(4 == quotationMarkCnt)
+			{
+				idx++;
+				break;
+			}
+		}
+
+	}
+
+	if (0 == subResult && 4 == quotationMarkCnt)
+	{
+		if(!memcmp(pSSIDpassword + offset + idx, "\r\n", 2))
+		{
+			idx +=2;
+			memset(pSSIDpassword + offset + idx, '\0', EEPROM_PAGE_SIZE/2 - offset - idx);
+			result = pSSIDpassword;
+		}
 	}
 
 	return result;
@@ -343,7 +385,10 @@ uint32_t ExtractValue(const uint8_t* const pKeyWord,
 {
     const uint8_t* pBrowse = pBUff;
 
-    uint32_t strLng = 0, value = 0, decOrder = 1, keyWordFound = 0;
+    uint32_t strLng = 0;
+    uint32_t value = 0;
+	uint32_t decOrder = 1;
+	uint32_t keyWordFound = 0;
 
     /* Is keyword in pBUff ? */
     for (uint32_t idx = 0; idx < buffLng; idx++)
