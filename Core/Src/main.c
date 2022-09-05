@@ -37,14 +37,23 @@
 #include "esp8266_http_server.h"
 #include "rda5807m.h"
 #include "cmd_dispatcher.h"
+#include "eeprom_25aa1024.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define CHECK_EEPROM	(uint8_t)(0)
+#define CHECK_RADIO		(uint8_t)(1)
+#define CHECK_WIFI		(uint8_t)(2)
+#define CHECK_FREQUENCY	(uint8_t)(3)
+#define CHECK_VOLUME	(uint8_t)(4)
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -62,8 +71,10 @@ DMA_HandleTypeDef hdma_usart2_rx;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void MAIN_InfiniteFaultBlink(void);
 void MAIN_ShortcutUSB(void);
+void MAIN_ModuleCheckStates(void);
+uint8_t MAIN_EEPROM_CheckIfOk(void);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -77,11 +88,14 @@ void MAIN_ShortcutUSB(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-   uint32_t initStateLEDC = 0, initStateESP = 0;
+	uint8_t* rxStrBuff = NULL;
+	char *pHTTPReq = NULL;
+
+   uint32_t initStateESP = 0;
    uint32_t rxStrlng;
-   uint8_t* rxStrBuff = NULL;
-   char *pHTTPReq = NULL;
+
    uint32_t httpReqLng = 0;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -113,14 +127,22 @@ int main(void)
   /* MCU's HW initialized, turn off green LED*/
   BLUEPILL_LED(0);
 
-  if(0!= (initStateLEDC = LEDC_InitHW()))
-  {
-	  MAIN_InfiniteFaultBlink();
-  }
+  LEDC_InitHW();
+
   if(0!= (initStateESP = ESP_HTTPinit()))
   {
-	  while(1) LEDC_SetNewRollingString("ESP8266 FAULT", strlen("ESP8266 FAULT"));
+	  while(1) LEDC_SetNewRollingString("ESP Init fault", strlen("ESP Init fault"));
   }
+
+  systemGlobalState.states.eepromFunctional =  MAIN_EEPROM_CheckIfOk();
+
+  EEPROM_GetSystemState();
+
+  RDA5807mInit();
+
+  RDA5807mSetFreq(systemGlobalState.radioFreq);
+  RDA5807mSetVolm(systemGlobalState.radioVolm);
+
 
   /* USER CODE END 2 */
 
@@ -140,10 +162,13 @@ int main(void)
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-      if(0 == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
+      // Function returns 0 when OK received
+      if(!ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
       {
           ESP_ProcessHTTP(pHTTPReq, httpReqLng);
       }
+
+      MAIN_ModuleCheckStates();
 
   }
   /* USER CODE END 3 */
@@ -228,13 +253,119 @@ void MAIN_ShortcutUSB(void)
 	  __HAL_RCC_GPIOA_CLK_DISABLE();
 }
 
-void MAIN_InfiniteFaultBlink(void)
+void MAIN_ModuleCheckStates(void)
 {
-	while(1)
+	static uint32_t prevTick;
+	static uint8_t informationFSM = 0;
+	uint8_t anyFault = 0;
+
+	if(prevTick + 30*1000 < HAL_GetTick() && !LEDC_GetRollingStatus())
 	{
-		HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
-		HAL_Delay(100);
+		char message[32] = {0};
+
+
+		switch(informationFSM)
+		{
+		case CHECK_EEPROM:
+		{
+			if(!MAIN_EEPROM_CheckIfOk())
+			{
+				LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
+				anyFault = 1;
+			}
+			else
+			{
+				anyFault = 0;
+			}
+
+			informationFSM = CHECK_RADIO;
+		}
+		if (anyFault) break;
+		case CHECK_RADIO:
+		{
+			// Receiver signal strength is always > 0
+			if(0 == RDA5807mGetRSSI())
+			{
+				systemGlobalState.states.rdaFunctional = 0;
+				EEPROM_SetSystemState();
+				LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
+				anyFault = 1;
+			}
+			else
+			{
+				anyFault = 0;
+				systemGlobalState.states.rdaFunctional = 1;
+			}
+
+			informationFSM = CHECK_WIFI;
+
+		}
+		if (anyFault) break;
+		case CHECK_WIFI:
+		{
+			// either +CWJAP:"SSID","MAC address" ..  OK
+			// or No AP OK
+			ESP_SendCommand("AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"));
+			if(ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
+			{
+				systemGlobalState.states.espConnected = 0;
+				EEPROM_SetSystemState();
+
+				LEDC_SetNewRollingString("Offline", strlen("Offline"));
+
+				anyFault = 1;
+			}
+			else
+			{
+				anyFault = 0;
+			}
+
+			informationFSM = CHECK_FREQUENCY;
+		}
+		if (anyFault) break;
+		case CHECK_FREQUENCY:
+		{
+			if(systemGlobalState.states.rdaFunctional)
+			{
+				sprintf(message, "frequency %d mhz", systemGlobalState.radioFreq);
+				LEDC_SetNewRollingString(message, strlen(message));
+			}
+
+			informationFSM = CHECK_VOLUME;
+		}
+		break;
+		case CHECK_VOLUME:
+		{
+			if(systemGlobalState.states.rdaFunctional)
+			{
+				if(systemGlobalState.states.rdaIsMute)
+				{
+					sprintf(message, "muted");
+				}
+				else
+				{
+					sprintf(message, "volume %di15", systemGlobalState.radioVolm);
+				}
+				LEDC_SetNewRollingString(message, strlen(message));
+			}
+
+			informationFSM = CHECK_EEPROM;
+		}
+		default :
+		{
+			/* Show time */
+		}
+		}
+
+		prevTick = HAL_GetTick();
 	}
+}
+
+
+uint8_t MAIN_EEPROM_CheckIfOk(void)
+{
+	/* TBD */
+	return 1;
 }
 
 /* USER CODE END 4 */

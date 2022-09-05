@@ -51,6 +51,26 @@
 #define EEPROM_WIFI_ADR_2		(uint32_t)(0x018700)
 #define EEPROM_WIFI_ADR_3		(uint32_t)(0x018780)
 
+#define EEPROM_SYS_STATE_ADR	(uint32_t)(0x018800)
+
+typedef struct sys_state_flags
+{
+	uint8_t rdaFunctional : 1,
+	        rdaIsMute : 1,
+			espConnected : 1,
+			eepromFunctional : 1;
+}sys_state_flags_t;
+
+typedef struct sys_state
+{
+	uint16_t radioFreq;
+	uint32_t tickOffset;
+	uint8_t radioVolm;
+	sys_state_flags_t states;
+}sys_state_t;
+
+sys_state_t systemGlobalState;
+
 uint32_t EEPROM_Init(void);
 uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t Size);
 uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size);
@@ -59,4 +79,6 @@ uint32_t EEPROM_WriteStatusRegister(uint8_t value);
 uint16_t Cmd25AA1024WrBytes(const uint8_t* const cmd, const uint16_t lng);
 uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng);
 uint8_t* EEPROM_GetWIfi(uint32_t address, uint32_t offset, uint8_t* pSSIDpassword);
+uint32_t EEPROM_GetSystemState(void);
+uint32_t EEPROM_SetSystemState(void);
 #endif /* EEPROM_25AA1024_H_ */

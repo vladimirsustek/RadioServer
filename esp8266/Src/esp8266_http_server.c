@@ -23,14 +23,33 @@ uint32_t ESP_HTTPinit (void)
 	uint8_t pSSIDpassword[EEPROM_PAGE_SIZE/2];
 
 	// UART init and activate-deactivate RST pin of ESP8266
-	if(ESP_ComInit()) result++;
+	ESP_ComInit();
 
     // Inform that WIFI connection is being established
-	if(LEDC_SetNewStandingText("ESPI")) result++;
+	LEDC_SetNewStandingText("ESPI");
 
 	// Software reset
-    ESP_SendCommand(atCmd_RST, strlen(atCmd_RST));
-    if(ESP_CheckResponse((char*)atRsp_ready, strlen(atRsp_ready), ESP_TIMEOUT_2s)) result++;
+	for(uint8_t resetAttempts = 0; resetAttempts < 3; resetAttempts++)
+	{
+	    ESP_SendCommand(atCmd_RST, strlen(atCmd_RST));
+	    if(ESP_CheckResponse((char*)atRsp_ready, strlen(atRsp_ready), ESP_TIMEOUT_2s))
+	    {
+	    	result++;
+	    }
+	    else
+	    {
+	    	result = 0;
+	    	break;
+	    }
+	}
+
+	// If reset 3x did not work well, no reason to continue
+	if(0 != result)
+	{
+    	LEDC_StopStandingText();
+		return ESP_HARD_ERR;
+
+	}
 
     // Disconnecting from current WIFI
     ESP_SendCommand(atCmd_CWQAP, strlen(atCmd_CWQAP));
@@ -58,6 +77,10 @@ uint32_t ESP_HTTPinit (void)
 				ESP_TIMEOUT_15s);
 		if (0 == subResult)
 		{
+			EEPROM_GetSystemState();
+			systemGlobalState.states.espConnected = 1;
+			EEPROM_SetSystemState();
+
 			break;
 		}
     }
@@ -155,9 +178,11 @@ uint32_t ESP_CheckReceiveHTTP(char **ppHTTPreq, uint32_t *pHTTPreqLng)
 
 char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 {
-	uint32_t linkNum = 0, value = 0;
-	char *pBegin = NULL;
 	char auxStr[32];
+	const uint8_t* pBuff = (uint8_t*)auxStr;
+	char *pBegin = NULL;
+
+	uint32_t linkNum = 0, value = 0;
 
 	if (ESP_ExtractValue("+IPD,", pHTTPReq, hhhtReqLng, &linkNum))
 	{
@@ -173,27 +198,23 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 		}
 		if(ESP_ExtractValue("volm=", pHTTPReq, hhhtReqLng, &value) && ESP_ExtractString("ST_VOLM", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			RDA5807mSetVolm((uint8_t)value);
-			sprintf(auxStr, "RDA VOLUME %02ld", value);
-			LEDC_SetNewRollingString(auxStr, strlen(auxStr));
+			sprintf(auxStr, "ST_VOLM_%02ld\r\n", value);
+			CmdRDA5807mSetVolm(pBuff, strlen(auxStr));
 		}
 		if(ESP_ExtractValue("freq=", pHTTPReq, hhhtReqLng, &value) && ESP_ExtractString("ST_FREQ", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			RDA5807mSetFreq((uint16_t)value);
-			sprintf(auxStr, "RDA FREQUENCY %05ld", value);
-			LEDC_SetNewRollingString(auxStr, strlen(auxStr));
+			sprintf(auxStr, "ST_FREQ_%05ld\r\n", value);
+			CmdRDA5807mSetFreq(pBuff, strlen(auxStr));
 		}
 		if(ESP_ExtractString("DO_INIT", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			RDA5807mInit();
-			sprintf(auxStr, "RDA INIT");
-			LEDC_SetNewRollingString(auxStr, strlen(auxStr));
+			sprintf(auxStr, "DO_INIT\r\n");
+			CmdRDA5807mDoInit(pBuff, strlen(auxStr));
 		}
 		if(ESP_ExtractString("DO_RSET", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			RDA5807mReset();
-			sprintf(auxStr, "RDA RESET");
-			LEDC_SetNewRollingString(auxStr, strlen(auxStr));
+			sprintf(auxStr, "DO_RSET\r\n");
+			CmdRDA5807mDoReset(pBuff, strlen(auxStr));
 		}
 		ESP_SendHTTP((char*)pageIndex, linkNum);
 	}

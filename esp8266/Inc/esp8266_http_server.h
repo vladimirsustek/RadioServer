@@ -13,8 +13,9 @@
 
 #include "esp8266_port.h"
 #include "esp8266_http_data.h"
+#include "esp8266_functions.h"
 
-#include "rda5807m.h"
+#include "cmd_rda5807m.h"
 
 #include "eeprom_25aa1024.h"
 

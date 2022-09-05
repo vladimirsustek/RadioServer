@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define CMD_EOL_LNG         ((uint8_t)(1u))
+#define CMD_EOL_LNG         ((uint8_t)(2u))
 #define CMD_DELIMITER_LNG   ((uint8_t)(1u))
 #define CMD_DELIMITER       ((uint8_t)('_'))
 

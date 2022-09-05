@@ -61,7 +61,7 @@ void RDA5807mInit(void) {
     uint16_t RDA5807Registers[6] = {0};
 	/* Register REG_ADR_02 */
 #if RDS_USED
-    RDA5807Registers[0] = (1 << DHIZ) | (1 << BASS) | (1 << RCLK_DIR_MODE) | (1 << RDS_EN) | (1 << ENABLE);
+    RDA5807Registers[0] = (1 << DHIZ) | (1 << DMUTE) | (1 << BASS) | (1 << RCLK_DIR_MODE) | (1 << RDS_EN) | (1 << ENABLE);
 #else
     RDA5807Registers[0] = (1 << DHIZ) | (1 << BASS) | (1 << RCLK_DIR_MODE) | (1 << ENABLE);
 #endif

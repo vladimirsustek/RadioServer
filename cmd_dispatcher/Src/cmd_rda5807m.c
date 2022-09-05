@@ -9,6 +9,10 @@ uint16_t CmdRDA5807mDoInit(const uint8_t* const pStrCmd, const uint16_t lng) {
 
 	RDA5807mInit();
 
+	systemGlobalState.states.rdaIsMute = 0;
+	EEPROM_SetSystemState();
+
+
 	return CMD_RET_OK;
 }
 
@@ -21,6 +25,10 @@ uint16_t CmdRDA5807mDoReset(const uint8_t* const pStrCmd, const uint16_t lng) {
     }
 
 	RDA5807mReset();
+
+	systemGlobalState.states.rdaIsMute = 0;
+	EEPROM_SetSystemState();
+
     return CMD_RET_OK;
 
 }
@@ -37,6 +45,9 @@ uint16_t CmdRDA5807mSetMute(const uint8_t* const pStrCmd, const uint16_t lng) {
     uint8_t mute = pStrCmd[CMD_ARG_OFFSET + 0] - '0';
 
 	uint16_t result = RDA5807mMute(mute);
+
+	systemGlobalState.states.rdaIsMute = mute;
+	EEPROM_SetSystemState();
 
 	result = (RDA5807M_FN_OK == result) ? CMD_RET_OK : CMD_RET_ERR;
 
@@ -59,6 +70,9 @@ uint16_t CmdRDA5807mSetFreq(const uint8_t* const pStrCmd, const uint16_t lng) {
     freq += (pStrCmd[CMD_ARG_OFFSET + 3] - '0')*10;
     freq += (pStrCmd[CMD_ARG_OFFSET + 4] - '0')*1;
 
+	systemGlobalState.radioFreq = freq;
+	EEPROM_SetSystemState();
+
 	uint16_t result = RDA5807mSetFreq(freq);
 
     result = (RDA5807M_FN_OK == result) ? CMD_RET_OK : CMD_RET_ERR;
@@ -79,6 +93,10 @@ uint16_t CmdRDA5807mSetVolm(const uint8_t* const pStrCmd, const uint16_t lng) {
 
     volm = (pStrCmd[CMD_ARG_OFFSET + 0] - '0')*10;
     volm += (pStrCmd[CMD_ARG_OFFSET + 1] - '0')*1;
+
+	systemGlobalState.states.rdaIsMute = 0;
+	systemGlobalState.radioVolm = volm;
+	EEPROM_SetSystemState();
 
 	uint16_t result = RDA5807mSetVolm(volm);
 

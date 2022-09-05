@@ -30,6 +30,7 @@ static uint32_t ExtractValue(const uint8_t* const pKeyWord,
 		const uint32_t buffLng,
 		uint32_t* val);
 
+sys_state_t systemGlobalState = {0};
 
 uint32_t SPI1_NCSactivate(void)
 {
@@ -376,6 +377,28 @@ uint8_t* EEPROM_GetWIfi(uint32_t address, uint32_t offset, uint8_t* pSSIDpasswor
 	}
 
 	return result;
+}
+
+uint32_t EEPROM_GetSystemState(void)
+{
+	uint32_t subResult;
+
+	subResult = EEPROM_ReadData(EEPROM_SYS_STATE_ADR, (uint8_t*)&systemGlobalState, sizeof(sys_state_t));
+
+	subResult = (0 == subResult) ? 0 : (uint32_t)-1;
+
+	return subResult;
+}
+
+uint32_t EEPROM_SetSystemState(void)
+{
+	uint32_t subResult;
+
+	subResult = EEPROM_WriteData(EEPROM_SYS_STATE_ADR, (uint8_t*)&systemGlobalState, sizeof(sys_state_t));
+
+	subResult = (0 == subResult) ? 0 : (uint32_t)-1;
+
+	return subResult;
 }
 
 uint32_t ExtractValue(const uint8_t* const pKeyWord,

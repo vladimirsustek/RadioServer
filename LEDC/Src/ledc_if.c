@@ -142,9 +142,8 @@ static uint8_t ASCII27SEG(uint8_t ascii)
 
 uint32_t LEDC_InitHW(void)
 {
-	uint32_t result = 0;
-	result = (uint32_t)HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
-	return result;
+	HAL_TIM_OC_Start_IT(&htim2, TIM_CHANNEL_1);
+	return 0;
 }
 
 uint32_t LEDC_GetRollingStatus(void)
