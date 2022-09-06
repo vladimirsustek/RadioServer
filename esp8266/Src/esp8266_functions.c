@@ -133,7 +133,7 @@ uint32_t ESP_CheckRX(uint32_t timeOut,
 	return processingResult;
 }
 
-uint32_t ESP_CheckResponse(char *pCmd, uint32_t cmdLng, uint32_t timeOut)
+uint8_t* ESP_CheckResponse(char *pCmd, uint32_t cmdLng, uint32_t timeOut)
 {
 	const uint32_t blockingTimeoutYes = 1u;
 
@@ -144,5 +144,10 @@ uint32_t ESP_CheckResponse(char *pCmd, uint32_t cmdLng, uint32_t timeOut)
 
 	result = ESP_CheckRX(timeOut, blockingTimeoutYes, ESP_CheckForKeyWord, pCmd, &pDummyC, &pDummyU32);
 
-	return result;
+	if (ESP_OK != result)
+	{
+		pDummyC = NULL;
+	}
+
+	return (uint8_t*)pDummyC;
 }

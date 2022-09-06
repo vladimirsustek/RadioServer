@@ -19,7 +19,7 @@ uint32_t ESP_HTTPinit (void)
 {
 
 	uint32_t result = 0;
-	uint32_t subResult = 0;
+	uint8_t* subResult = 0;
 	uint8_t pSSIDpassword[EEPROM_PAGE_SIZE/2];
 
 	// UART init and activate-deactivate RST pin of ESP8266
@@ -29,7 +29,7 @@ uint32_t ESP_HTTPinit (void)
 	for(uint8_t resetAttempts = 0; resetAttempts < 3; resetAttempts++)
 	{
 	    ESP_SendCommand(atCmd_RST, strlen(atCmd_RST));
-	    if(ESP_CheckResponse((char*)atRsp_ready, strlen(atRsp_ready), ESP_TIMEOUT_2s))
+	    if(NULL == ESP_CheckResponse((char*)atRsp_ready, strlen(atRsp_ready), ESP_TIMEOUT_2s))
 	    {
 	    	result++;
 	    }
@@ -50,7 +50,7 @@ uint32_t ESP_HTTPinit (void)
 
     // Disconnecting from current WIFI
     ESP_SendCommand(atCmd_CWQAP, strlen(atCmd_CWQAP));
-    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_2s)) result++;
+    if(NULL == ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_2s)) result++;
 
     // Iterative attempt to connect with predefined EEPROM stored WIFIs
     for (uint32_t adr = EEPROM_WIFI_ADR_0;
@@ -63,7 +63,7 @@ uint32_t ESP_HTTPinit (void)
     	if (NULL == wifi)
     	{
     		// Attempt set unsuccessful and force a next read
-    		subResult = (uint32_t)(-1);
+    		subResult = NULL;
     		continue;
     	}
 		memcpy(wifi, atCmd_CWJAP, atCmd_CWJAP_LNG);
@@ -72,7 +72,7 @@ uint32_t ESP_HTTPinit (void)
 		subResult = ESP_CheckResponse((char*)atRsp_WifiGotIp,
 				strlen(atRsp_WifiGotIp),
 				ESP_TIMEOUT_15s);
-		if (0 == subResult)
+		if (NULL != subResult)
 		{
 			EEPROM_GetSystemState();
 			systemGlobalState.states.espConnected = 1;
@@ -82,26 +82,26 @@ uint32_t ESP_HTTPinit (void)
 		}
     }
 
-    if (0 != subResult)
+    if (NULL == subResult)
     {
     	return ESP_WIFI_FAILED;
     }
 
 	/********* AT (just testing no-set/no-get command)**********/
     ESP_SendCommand(atCmd, strlen(atCmd));
-    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
+    if(NULL == ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
 	/********* AT+CWMODE=1 **********/
     ESP_SendCommand(atCmd_CWMODE, strlen(atCmd_CWMODE));
-    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
+    if(NULL == ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
 	/********* AT+CIPMUX **********/
     ESP_SendCommand(atCmd_CIPMUX, strlen(atCmd_CIPMUX));
-    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
+    if(NULL == ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
 	/********* AT+CIPSERVER **********/
     ESP_SendCommand(atCmd_CIPSERVER, strlen(atCmd_CIPSERVER));
-    if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
+    if(NULL == ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
 
     result = (result) ? ESP_HARD_ERR : ESP_OK;
 
@@ -183,13 +183,21 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 	{
 		uint32_t DummyLng = 0;
 
-		if((pBegin = ESP_ExtractString("LEDON", pHTTPReq, hhhtReqLng, &DummyLng)) != NULL)
+
+		if(ESP_ExtractString("DO_INIT", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			//BLUEPILL_LED(1);
+			sprintf(auxStr, "DO_INIT\r\n");
+			CmdRDA5807mDoInit(pBuff, strlen(auxStr));
 		}
-		if((pBegin = ESP_ExtractString("LEDOFF", pHTTPReq, hhhtReqLng, &DummyLng)) != NULL)
+		if(ESP_ExtractString("DO_RSET", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			//BLUEPILL_LED(0);
+			sprintf(auxStr, "DO_RSET\r\n");
+			CmdRDA5807mDoReset(pBuff, strlen(auxStr));
+		}
+		if(ESP_ExtractString("ST_MUTE", pHTTPReq, hhhtReqLng, &DummyLng))
+		{
+			sprintf(auxStr, "ST_MUTE_%c\r\n", '?');
+			CmdRDA5807mSetMute(pBuff, strlen(auxStr));
 		}
 		if(ESP_ExtractValue("volm=", pHTTPReq, hhhtReqLng, &value) && ESP_ExtractString("ST_VOLM", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
@@ -201,16 +209,7 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 			sprintf(auxStr, "ST_FREQ_%05ld\r\n", value);
 			CmdRDA5807mSetFreq(pBuff, strlen(auxStr));
 		}
-		if(ESP_ExtractString("DO_INIT", pHTTPReq, hhhtReqLng, &DummyLng))
-		{
-			sprintf(auxStr, "DO_INIT\r\n");
-			CmdRDA5807mDoInit(pBuff, strlen(auxStr));
-		}
-		if(ESP_ExtractString("DO_RSET", pHTTPReq, hhhtReqLng, &DummyLng))
-		{
-			sprintf(auxStr, "DO_RSET\r\n");
-			CmdRDA5807mDoReset(pBuff, strlen(auxStr));
-		}
+
 		ESP_SendHTTP((char*)pageIndex, linkNum);
 	}
 

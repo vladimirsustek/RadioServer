@@ -21,7 +21,7 @@ uint32_t ESP_CheckRX(uint32_t timeOut,
 					 char **retStr,
 					 uint32_t * retU32);
 
-uint32_t ESP_CheckResponse(char *pCmd, uint32_t cmdLng, uint32_t timeOut);
+uint8_t* ESP_CheckResponse(char *pCmd, uint32_t cmdLng, uint32_t timeOut);
 
 
 #endif /* ESP8266_FUNCTIONS_H_ */

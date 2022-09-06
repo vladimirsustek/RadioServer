@@ -312,7 +312,7 @@ void MAIN_ModuleCheckStates(void)
 			ESP_SendCommand("AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"));
 			// either +CWJAP:"SSID","MAC address" ..  OK
 			// or No AP OK
-			if(ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
+			if(NULL == ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
 			{
 				systemGlobalState.states.espConnected = 0;
 				LEDC_SetNewRollingString("offline", strlen("offline"));
@@ -328,7 +328,7 @@ void MAIN_ModuleCheckStates(void)
 
 			ESP_SendCommand("AT+CIPMUX?\r\n", strlen("AT+CIPMUX?\r\n"));
 
-			if(ESP_CheckResponse("+CIPMUX:1", strlen("+CIPMUX:1"), ESP_TIMEOUT_300ms))
+			if(NULL == ESP_CheckResponse("+CIPMUX:1", strlen("+CIPMUX:1"), ESP_TIMEOUT_300ms))
 			{
 				systemGlobalState.states.espConnected = 0;
 				LEDC_SetNewRollingString("offline", strlen("offline"));
@@ -339,6 +339,35 @@ void MAIN_ModuleCheckStates(void)
 			}
 			else
 			{
+				ESP_SendCommand("AT+CIFSR\r\n", strlen("AT+CIFSR\r\n"));
+				uint8_t* ipStr = ESP_CheckResponse("+CIFSR:STAIP,", strlen("+CIFSR:STAIP,"), ESP_TIMEOUT_300ms) + strlen("+CIFSR:STAIP,");
+
+				if(ipStr)
+				{
+					uint8_t idx = 0;
+					uint8_t quotationMarkCnt = 0;
+					for(idx = 0; idx < 17; idx++)
+					{
+
+						if('"' == ipStr[idx])
+						{
+							quotationMarkCnt++;
+						}
+						if(quotationMarkCnt == 2)
+						{
+							break;
+						}
+					}
+					if(2 == quotationMarkCnt)
+					{
+						char ipAdr[15] = {0};
+						memcpy(ipAdr, ipStr + 1, idx -1);
+						LEDC_SetNewRollingString(ipAdr, idx -1);
+					}
+				}
+
+
+
 				anyFault = 0;
 			}
 			informationFSM = CHECK_FREQUENCY;

@@ -10,21 +10,18 @@
 char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<body>\n\
 				<h1>RDA5807 control page</h1>\n\
-				<form action=\"/pageIndex LEDON\">\n\
-				<input type=\"submit\" value=\"BluePill LED ON  \">\n\
-				</form>\n\
-				<br>\n\
-				<form action=\"/pageIndex LEDOFF\">\n\
-				<input type=\"submit\" value=\"BluePill LED OFF\">\n\
-				</form>\n\
-				<br>\n\
 				<form action=\"/pageIndex DO_INITrn\">\n\
 				<input type=\"submit\" value=\"Initialize\">\n\
 				</form>\n\
 				<br>\n\
-				<form action=\"/pageIndex DO_RSETrn\">\n\
+				<form action=\"/pageIndex DO_RSET\r\n\">\n\
 				<input type=\"submit\" value=\"Reset\">\n\
 				</form>\n\
+		        <br>\n\
+				<form action=\"/pageIndex ST_MUTE\r\n\">\n\
+				<input type=\"submit\" value=\"(Un)Mute\">\n\
+				</form>\n\
+				<br>\n\
 				<br>\n\
 				<br>\n\
 				<form action=\"/pageIndex ST_VOLM\">\n\
@@ -36,6 +33,31 @@ char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<input type=\"text\" id=\"freq\" name=\"freq\" value=\"08920\"><br><br>\n\
 				<input type=\"submit\" value=\"SendFrequency\">\n\
 				</form>\n\
+				<br>\n\
+				<form action=\"/pageIndex ST_FREQfreq=08920\r\n\">\n\
+				<input type=\"submit\" value=\"(AT) RADIO O3\">\n\
+				</form>\n\
+		        <br>\n\
+				<form action=\"/pageIndex ST_FREQfreq=10170\r\n\">\n\
+				<input type=\"submit\" value=\"(AT) RADIO FM4\">\n\
+				</form>\n\
+		        <br>\n\
+				<form action=\"/pageIndex ST_FREQfreq=09910\r\n\">\n\
+				<input type=\"submit\" value=\"(AT) ANTENNE\">\n\
+				</form>\n\
+		        <br>\n\
+				<form action=\"/pageIndex ST_FREQfreq=09520\r\n\">\n\
+				<input type=\"submit\" value=\"(SK) EXPRESS\">\n\
+				</form>\n\
+		        <br>\n\
+				<form action=\"/pageIndex ST_FREQfreq=10780\r\n\">\n\
+				<input type=\"submit\" value=\"(CZ) DVOJKA\">\n\
+				</form>\n\
+		        <br>\n\
+				<form action=\"/pageIndex ST_FREQfreq=09770\r\n\">\n\
+				<input type=\"submit\" value=\"(CZ) IMPULZ\">\n\
+				</form>\n\
+		        <br>\n\
 				</body></html>";
 
 const char * atCmd = "AT\r\n";

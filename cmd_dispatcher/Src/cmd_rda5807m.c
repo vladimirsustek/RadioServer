@@ -42,11 +42,19 @@ uint16_t CmdRDA5807mSetMute(const uint8_t* const pStrCmd, const uint16_t lng) {
         return CMD_RET_ERR;
     }
 
-    uint8_t mute = pStrCmd[CMD_ARG_OFFSET + 0] - '0';
+    uint8_t mute = pStrCmd[CMD_ARG_OFFSET + 0] ;
 
-	uint16_t result = RDA5807mMute(mute);
+    if ('?' == mute)
+    {
+    	systemGlobalState.states.rdaIsMute = (systemGlobalState.states.rdaIsMute) ? 0 : 1;
+    }
+    else
+    {
+    	mute -= '0';
+    }
 
-	systemGlobalState.states.rdaIsMute = mute;
+	uint16_t result = RDA5807mMute(systemGlobalState.states.rdaIsMute);
+
 	EEPROM_SetSystemState();
 
 	result = (RDA5807M_FN_OK == result) ? CMD_RET_OK : CMD_RET_ERR;
