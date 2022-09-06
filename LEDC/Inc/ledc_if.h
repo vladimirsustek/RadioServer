@@ -25,7 +25,8 @@ uint32_t LEDC_SetNewRollingString(const char * str, uint32_t length);
 uint32_t LEDC_GetRollingStatus(void);
 uint32_t LEDC_SetNewStandingText(const char * str);
 uint32_t LEDC_StopStandingText(void);
-
+uint32_t LEDC_SetNewInfiniteRollingString(const char * str);
+uint32_t LEDC_StopInfiniteRollingString(void);
 /*To be called periodically using timer, isr ... whatever (cca 200x second)*/
 uint32_t LEDC_PeriodicDisplayService(void);
 

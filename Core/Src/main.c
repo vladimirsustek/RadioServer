@@ -74,7 +74,7 @@ void SystemClock_Config(void);
 void MAIN_ShortcutUSB(void);
 void MAIN_ModuleCheckStates(void);
 uint8_t MAIN_EEPROM_CheckIfOk(void);
-
+void MAIN_ESP_InitConnect(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -91,7 +91,6 @@ int main(void)
 	uint8_t* rxStrBuff = NULL;
 	char *pHTTPReq = NULL;
 
-   uint32_t initStateESP = 0;
    uint32_t rxStrlng;
 
    uint32_t httpReqLng = 0;
@@ -124,25 +123,20 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  /* MCU's HW initialized, turn off green LED*/
-  BLUEPILL_LED(0);
-
   LEDC_InitHW();
 
-  if(0!= (initStateESP = ESP_HTTPinit()))
+  // Checks EEPROM functionality and also reads the systemGlobalState
+  // stored in the EEPROM containing last frequency, volume
+  MAIN_EEPROM_CheckIfOk();
+
+  if(0 == systemGlobalState.states.eepromFunctional)
   {
-	  while(1) LEDC_SetNewRollingString("ESP Init fault", strlen("ESP Init fault"));
+	  LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
   }
 
-  systemGlobalState.states.eepromFunctional =  MAIN_EEPROM_CheckIfOk();
+  RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
 
-  EEPROM_GetSystemState();
-
-  RDA5807mInit();
-
-  RDA5807mSetFreq(systemGlobalState.radioFreq);
-  RDA5807mSetVolm(systemGlobalState.radioVolm);
-
+  MAIN_ESP_InitConnect();
 
   /* USER CODE END 2 */
 
@@ -153,6 +147,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  // VCOM RX routine
       rxStrBuff = VCOMFetchReceivedLine(&rxStrlng);
 
       if (NULL != rxStrBuff)
@@ -162,12 +158,17 @@ int main(void)
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-      // Function returns 0 when OK received
-      if(!ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
+      // Function returns ESP_RET_OK when HTTP request received
+      if(ESP_RET_OK == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
       {
+    	  // Process the request
           ESP_ProcessHTTP(pHTTPReq, httpReqLng);
       }
 
+      // 1x per 30 second check whether:
+      // 				ESP is connected to WIFI
+      //				RDA is functional (RSSI > 0)
+      // If RDA is functional inform about freq and volm
       MAIN_ModuleCheckStates();
 
   }
@@ -286,10 +287,11 @@ void MAIN_ModuleCheckStates(void)
 			// Receiver signal strength is always > 0
 			if(0 == RDA5807mGetRSSI())
 			{
+				// inform, save the state and try to re-init
 				systemGlobalState.states.rdaFunctional = 0;
-				EEPROM_SetSystemState();
 				LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
 				anyFault = 1;
+				RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
 			}
 			else
 			{
@@ -303,23 +305,42 @@ void MAIN_ModuleCheckStates(void)
 		if (anyFault) break;
 		case CHECK_WIFI:
 		{
+			// 1) Are we connected ? (AT+CWJAP?)
+			// 2) Are we providing a server ? (AT+CIPMUX?)
+
+
+			ESP_SendCommand("AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"));
 			// either +CWJAP:"SSID","MAC address" ..  OK
 			// or No AP OK
-			ESP_SendCommand("AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"));
 			if(ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
 			{
 				systemGlobalState.states.espConnected = 0;
-				EEPROM_SetSystemState();
-
-				LEDC_SetNewRollingString("Offline", strlen("Offline"));
+				LEDC_SetNewRollingString("offline", strlen("offline"));
 
 				anyFault = 1;
+				// Try to re-init
+				MAIN_ESP_InitConnect();
 			}
 			else
 			{
 				anyFault = 0;
 			}
 
+			ESP_SendCommand("AT+CIPMUX?\r\n", strlen("AT+CIPMUX?\r\n"));
+
+			if(ESP_CheckResponse("+CIPMUX:1", strlen("+CIPMUX:1"), ESP_TIMEOUT_300ms))
+			{
+				systemGlobalState.states.espConnected = 0;
+				LEDC_SetNewRollingString("offline", strlen("offline"));
+
+				anyFault = 1;
+				// Try to re-init
+				MAIN_ESP_InitConnect();
+			}
+			else
+			{
+				anyFault = 0;
+			}
 			informationFSM = CHECK_FREQUENCY;
 		}
 		if (anyFault) break;
@@ -327,7 +348,7 @@ void MAIN_ModuleCheckStates(void)
 		{
 			if(systemGlobalState.states.rdaFunctional)
 			{
-				sprintf(message, "frequency %d mhz", systemGlobalState.radioFreq);
+				sprintf(message, "frequency %d khz", systemGlobalState.radioFreq*10);
 				LEDC_SetNewRollingString(message, strlen(message));
 			}
 
@@ -344,7 +365,7 @@ void MAIN_ModuleCheckStates(void)
 				}
 				else
 				{
-					sprintf(message, "volume %di15", systemGlobalState.radioVolm);
+					sprintf(message, "volume %d", systemGlobalState.radioVolm);
 				}
 				LEDC_SetNewRollingString(message, strlen(message));
 			}
@@ -353,7 +374,7 @@ void MAIN_ModuleCheckStates(void)
 		}
 		default :
 		{
-			/* Show time */
+			/* Show time as a standing string */
 		}
 		}
 
@@ -364,8 +385,42 @@ void MAIN_ModuleCheckStates(void)
 
 uint8_t MAIN_EEPROM_CheckIfOk(void)
 {
-	/* TBD */
-	return 1;
+	/* not needed to store into eeprom that the eeprom works*/
+	EEPROM_GetSystemState();
+	if (0xA == systemGlobalState.states.dummy0xA)
+	{
+		systemGlobalState.states.eepromFunctional = 1;
+	}
+	else
+	{
+		systemGlobalState.states.eepromFunctional = 0;
+	}
+
+	return (uint8_t)systemGlobalState.states.eepromFunctional;
+
+}
+
+void MAIN_ESP_InitConnect(void)
+{
+	  // ensure the string is displayed
+      while(LEDC_GetRollingStatus()) { }
+	  LEDC_SetNewInfiniteRollingString("Connecting");
+
+	  if(ESP_RET_OK != ESP_HTTPinit())
+	  {
+		  // Stop string Connecting and ensure the second string is displayed
+		  LEDC_StopInfiniteRollingString();
+		  while(LEDC_GetRollingStatus());
+		  LEDC_SetNewRollingString("ESP Init fault", strlen("ESP Init fault"));
+	  }
+	  else
+	  {
+		  // Stop string Connecting and ensure the second string is displayed
+		  LEDC_StopInfiniteRollingString();
+		  while(LEDC_GetRollingStatus());
+		  LEDC_SetNewRollingString("ESP Connected", strlen("ESP Connected"));
+	  }
+
 }
 
 /* USER CODE END 4 */

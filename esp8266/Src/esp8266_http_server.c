@@ -25,9 +25,6 @@ uint32_t ESP_HTTPinit (void)
 	// UART init and activate-deactivate RST pin of ESP8266
 	ESP_ComInit();
 
-    // Inform that WIFI connection is being established
-	LEDC_SetNewStandingText("ESPI");
-
 	// Software reset
 	for(uint8_t resetAttempts = 0; resetAttempts < 3; resetAttempts++)
 	{
@@ -105,8 +102,6 @@ uint32_t ESP_HTTPinit (void)
 	/********* AT+CIPSERVER **********/
     ESP_SendCommand(atCmd_CIPSERVER, strlen(atCmd_CIPSERVER));
     if(ESP_CheckResponse((char*)atRsp_OK, strlen(atRsp_OK), ESP_TIMEOUT_300ms)) result++;
-
-    if(LEDC_StopStandingText()) result++;
 
     result = (result) ? ESP_HARD_ERR : ESP_OK;
 
@@ -190,11 +185,11 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 
 		if((pBegin = ESP_ExtractString("LEDON", pHTTPReq, hhhtReqLng, &DummyLng)) != NULL)
 		{
-			BLUEPILL_LED(1);
+			//BLUEPILL_LED(1);
 		}
 		if((pBegin = ESP_ExtractString("LEDOFF", pHTTPReq, hhhtReqLng, &DummyLng)) != NULL)
 		{
-			BLUEPILL_LED(0);
+			//BLUEPILL_LED(0);
 		}
 		if(ESP_ExtractValue("volm=", pHTTPReq, hhhtReqLng, &value) && ESP_ExtractString("ST_VOLM", pHTTPReq, hhhtReqLng, &DummyLng))
 		{

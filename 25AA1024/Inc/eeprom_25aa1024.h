@@ -58,7 +58,8 @@ typedef struct sys_state_flags
 	uint8_t rdaFunctional : 1,
 	        rdaIsMute : 1,
 			espConnected : 1,
-			eepromFunctional : 1;
+			eepromFunctional : 1,
+	        dummy0xA : 4;
 }sys_state_flags_t;
 
 typedef struct sys_state

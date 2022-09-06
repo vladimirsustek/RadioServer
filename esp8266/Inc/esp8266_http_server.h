@@ -22,6 +22,8 @@
 
 #define MAX_HTTP_REQ_SIZE			(uint32_t)(128)
 
+#define ESP_RET_OK					(uint32_t)(0)
+
 uint32_t ESP_HTTPinit(void);
 uint32_t ESP_CheckReceiveHTTP(char **ppHTTPreq, uint32_t *pHTTPreqLng);
 char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng);

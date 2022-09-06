@@ -27,6 +27,8 @@ static uint32_t rollingStringBusyFlag = 0;
 
 static uint32_t standingStringBusyFlag = 0;
 
+static uint32_t infinitiveRollingStringFlag = 0;
+
 static uint8_t internalStrinBuff[MAX_STRING_LNG + OFFSET_WHITESPACE + 1 + 1];
 
 static uint32_t internalStringLentgh = 0;
@@ -313,7 +315,14 @@ uint32_t LEDC_PeriodicDisplayService(void)
 
 		if((internalStringLentgh - 1) == textPointer)
 		{
-			rollingStringBusyFlag = LEDC_RET_OK;
+			if(infinitiveRollingStringFlag)
+			{
+				textPointer = 0;
+			}
+			else
+			{
+				rollingStringBusyFlag = LEDC_RET_OK;
+			}
 		}
 	}
 	else if (standingStringBusyFlag)
@@ -338,4 +347,16 @@ uint32_t LEDC_PeriodicDisplayService(void)
 	}
 
 	return stop;
+}
+
+uint32_t LEDC_SetNewInfiniteRollingString(const char * str)
+{
+	infinitiveRollingStringFlag = 1;
+	return LEDC_SetNewRollingString(str, strlen(str));
+}
+
+uint32_t LEDC_StopInfiniteRollingString(void)
+{
+	infinitiveRollingStringFlag = 0;
+	return 0;
 }

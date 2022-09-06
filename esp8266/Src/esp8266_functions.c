@@ -77,7 +77,7 @@ uint32_t ESP_CheckRX(uint32_t timeOut,
 		{
 			rxResult = ESP_CheckRX_DMA_XUART(timeOut);
 		}
-		while(rxResult == ESP_RX_PENDING || rxResult == ESP_TX_TIMEOUT || rxResult == ESP_RX_SILENT);
+		while(rxResult == ESP_RX_PENDING /*|| rxResult == ESP_TX_TIMEOUT*/ || rxResult == ESP_RX_SILENT);
 
 		if(rxResult == ESP_OK)
 		{

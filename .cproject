@@ -81,15 +81,15 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="rda5807m/Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="25AA1024/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="LEDC/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="esp8266/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="cmd_dispatcher/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry excluding="ledc_7seg|LEDC" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="LEDC/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_DEVICE"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="cmd_dispatcher/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="esp8266/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="rda5807m/Src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -165,9 +165,9 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry excluding="ledc_7seg|LEDC" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_DEVICE"/>
 					</sourceEntries>
 				</configuration>

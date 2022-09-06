@@ -8,6 +8,14 @@
 #define swapbytes(byte)     ((((byte) & 0x00FF) << 8) | (((byte) & 0xFF00) >> 8))
 
 
+
+#define RDA_SWITCH_GND_Pin GPIO_PIN_13
+#define RDA_SWITCH_GND_GPIO_Port GPIOC
+
+#define RDA_SWITCH_PWR_Pin GPIO_PIN_14
+#define RDA_SWITCH_PWR_GPIO_Port GPIOC
+
+
 I2C_HandleTypeDef hi2c1;
 
 static void twi_readFromSlave(uint8_t DevAddress, uint8_t *pData, uint16_t Size)
@@ -55,7 +63,16 @@ void RDA5807mReset(void) {
 
 }
 
-void RDA5807mInit(void) {
+void RDA5807mInit(uint16_t freq, uint8_t volm)
+{
+
+	/* Power up and wait */
+	RDA5807mReset();
+	RDA5807mPowerCycle();
+
+    freq -= RDA5807mWW_FREQ_MIN;
+    freq /= 10;
+    freq <<= CHAN_0;
 
     /* For complete initialization, 6 (out of 7) registers must be written */
     uint16_t RDA5807Registers[6] = {0};
@@ -66,7 +83,7 @@ void RDA5807mInit(void) {
     RDA5807Registers[0] = (1 << DHIZ) | (1 << BASS) | (1 << RCLK_DIR_MODE) | (1 << ENABLE);
 #endif
 	/* Register REG_ADR_03 */
-	RDA5807Registers[1] = (1 << BAND_1) ;
+	RDA5807Registers[1] = freq | (1 << TUNE) | (1 << BAND_1) ;
 	/* Register REG_ADR_04 */
 #if RDS_USED
 	RDA5807Registers[2] = (1 << RDS_FIFO_EN) | (1 << RDS_FIFO_CLR);
@@ -74,7 +91,7 @@ void RDA5807mInit(void) {
     RDA5807Registers[2]= 0u;
 #endif
 	/* Register REG_ADR_05 */
-	RDA5807Registers[3] = (1 << LNA_PORT_SEL_1) | (1 << LNA_ICSEL_1);
+	RDA5807Registers[3] = (1 << LNA_PORT_SEL_1) | (1 << LNA_ICSEL_1) | volm;
     /* Register REG_ADR_06 */
     RDA5807Registers[4] = 0u;
     /* Register REG_ADR_07 */
@@ -132,7 +149,7 @@ uint16_t RDA5807mSetVolm(uint8_t volume) {
         return RDA5807M_FN_ER;
     /* To set volume, 4th register must be accessed,
        so 4x16b write transaction is needed */
-    uint16_t RDA5807Registers[4];
+    uint16_t RDA5807Registers[4] = {0};
 	/* Register REG_ADR_02 */
 #if RDS_USED
     RDA5807Registers[0] = (1 << DHIZ)| (1 << DMUTE) | (1 << BASS)| (1 << RCLK_DIR_MODE) | (1 << RDS_EN) | (1 << ENABLE);
@@ -150,7 +167,10 @@ uint16_t RDA5807mSetVolm(uint8_t volume) {
 	/* Register REG_ADR_05 */
 	RDA5807Registers[3] = (1 << INT_MODE) | (1 << SEEK_MODE_1)  | (1 << SEEKTH_1)| (1 << SEEKTH_0) | (1 << LNA_PORT_SEL_1) | (1 << LNA_ICSEL_1) | volume;
 
-    for(uint8_t idx = 0; idx < 4; idx++) RDA5807Registers[idx] = swapbytes(RDA5807Registers[idx]);
+    for(uint8_t idx = 0; idx < 4; idx++)
+    {
+    	RDA5807Registers[idx] = swapbytes(RDA5807Registers[idx]);
+    }
 
     twi_writeToSlave(RDA5807M_I2C_ADR, (uint8_t*)RDA5807Registers, 8);
 
@@ -314,4 +334,13 @@ void RDA5807mClearRDSFIFO(void) {
 
     twi_writeToSlave(RDA5807M_I2C_ADR, (uint8_t*)RDA5807Registers, 6);
 
+}
+
+void RDA5807mPowerCycle(void)
+{
+	HAL_GPIO_WritePin(RDA_SWITCH_GND_GPIO_Port, RDA_SWITCH_GND_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(RDA_SWITCH_PWR_GPIO_Port, RDA_SWITCH_PWR_Pin, GPIO_PIN_RESET);
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(RDA_SWITCH_PWR_GPIO_Port, RDA_SWITCH_PWR_Pin, GPIO_PIN_SET);
+	HAL_Delay(500);
 }

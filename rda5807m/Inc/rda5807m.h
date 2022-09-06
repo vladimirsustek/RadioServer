@@ -229,14 +229,14 @@
 #define rda5807mUnPackData(result)     (uint16_t)((result) & 0x0000FFFF)
 
 /**************** Public functions: Basic operation ***********/
-void RDA5807mInit(void);
+void RDA5807mInit(uint16_t freq, uint8_t volm);
 uint16_t RDA5807mSetFreq(uint16_t freq);
 uint16_t RDA5807mSetVolm(uint8_t volume);
 void RDA5807mReset(void);
 uint16_t RDA5807mMute(uint8_t mute);
 uint16_t RDA5807mGetRSSI(void);
 
-/**************** Public functions: Basic operation ***********/
+/**************** Public functions: Advanced operation ***********/
 
 uint16_t RDA5807mGetRDSR(void);
 uint16_t RDA5807mGetRDSS(void);
@@ -252,5 +252,6 @@ uint16_t RDA5807mGetErrBlockB(void);
 
 void RDA5807mClearRDSFIFO(void);
 
+void RDA5807mPowerCycle(void);
 
 

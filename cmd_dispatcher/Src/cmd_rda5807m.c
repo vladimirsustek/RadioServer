@@ -7,7 +7,7 @@ uint16_t CmdRDA5807mDoInit(const uint8_t* const pStrCmd, const uint16_t lng) {
         return CMD_RET_ERR;
     }
 
-	RDA5807mInit();
+	RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
 
 	systemGlobalState.states.rdaIsMute = 0;
 	EEPROM_SetSystemState();

@@ -57,8 +57,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LED_GREEN_Pin GPIO_PIN_13
-#define LED_GREEN_GPIO_Port GPIOC
+#define RDA_SWITCH_GND_Pin GPIO_PIN_13
+#define RDA_SWITCH_GND_GPIO_Port GPIOC
+#define RDA_SWITCH_PWR_Pin GPIO_PIN_14
+#define RDA_SWITCH_PWR_GPIO_Port GPIOC
+#define RDA_SWITCH_VCC_Pin GPIO_PIN_15
+#define RDA_SWITCH_VCC_GPIO_Port GPIOC
 #define ESP_RST_Pin GPIO_PIN_1
 #define ESP_RST_GPIO_Port GPIOA
 #define FLOATING_A_Pin GPIO_PIN_2
@@ -99,8 +103,6 @@ void Error_Handler(void);
 
 #define GPIO_ON_OFF(x) ((x) != 1 ? GPIO_PIN_SET : GPIO_PIN_RESET)
 
-#define BLUEPILL_LED(x) (HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_ON_OFF(x)))
-#define BLUEPILL_TOGLE_LED() (HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin))
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
