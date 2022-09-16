@@ -11,6 +11,7 @@
 
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
+TIM_HandleTypeDef htim3;
 
 static char uartX_rx_buf[ESP_COM_BUFF_LNG] = {0};
 
@@ -27,6 +28,8 @@ static uint32_t uartX_rx_read_ptr = 0;
 static uint32_t sendTimeOut = 0;
 static uint32_t sendTimeOutStarted = 0;
 
+static uint32_t espTick = 0;
+static uint32_t espTimeMilliseconds = 0;
 
 static uint32_t Do_2Sec_Reset(void)
 {
@@ -181,4 +184,49 @@ uint32_t ESP_SendCommand(const char* const pStrCmd, const uint32_t lng)
 	}
 
 	return result;
+}
+
+uint32_t ESP_Start_TimeTick(void)
+{
+	return (uint32_t)HAL_TIM_OC_Start_IT(&htim3, TIM_CHANNEL_1);
+}
+
+void ESP_IncrementTick(void)
+{
+	espTick++;
+}
+
+void ESP_IncrementTime(void)
+{
+	// day in milliseconds is 86 400 000
+	if (((24*60*60*1000)-1) == espTimeMilliseconds)
+	{
+		espTimeMilliseconds = 0;
+	}
+	else
+	{
+		espTimeMilliseconds++;
+	}
+}
+
+uint32_t ESP_GetTick(void)
+{
+	return espTick;
+}
+
+uint32_t ESP_GetTime(void)
+{
+	uint32_t hh = espTimeMilliseconds / 1000 / 60  / 60;
+	uint32_t mm = (espTimeMilliseconds - hh*1000*60*60) / 1000 / 60;
+
+	return (((uint32_t)hh << 24) + ((uint32_t)mm << 8));
+
+}
+
+void ESP_SeTime(uint32_t time)
+{
+	uint32_t hh = (time & 0xFF000000) >> 24;
+	uint32_t mm = (time & 0x0000FF00) >> 8;
+
+	espTimeMilliseconds = hh*60*60*1000 + mm*60*1000;
 }

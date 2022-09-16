@@ -57,18 +57,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define RDA_SWITCH_GND_Pin GPIO_PIN_13
-#define RDA_SWITCH_GND_GPIO_Port GPIOC
+#define GREEN_LED_Pin GPIO_PIN_13
+#define GREEN_LED_GPIO_Port GPIOC
 #define RDA_SWITCH_PWR_Pin GPIO_PIN_14
 #define RDA_SWITCH_PWR_GPIO_Port GPIOC
-#define RDA_SWITCH_VCC_Pin GPIO_PIN_15
-#define RDA_SWITCH_VCC_GPIO_Port GPIOC
+#define NCODER_CLK_Pin GPIO_PIN_15
+#define NCODER_CLK_GPIO_Port GPIOC
 #define ESP_RST_Pin GPIO_PIN_1
 #define ESP_RST_GPIO_Port GPIOA
-#define FLOATING_A_Pin GPIO_PIN_2
-#define FLOATING_A_GPIO_Port GPIOA
-#define FLOATING_B_Pin GPIO_PIN_3
-#define FLOATING_B_GPIO_Port GPIOA
+#define NCODER_IN_Pin GPIO_PIN_2
+#define NCODER_IN_GPIO_Port GPIOA
+#define FLOATING_PCB_ERROR_2_Pin GPIO_PIN_3
+#define FLOATING_PCB_ERROR_2_GPIO_Port GPIOA
 #define SPI1_NCS_Pin GPIO_PIN_4
 #define SPI1_NCS_GPIO_Port GPIOA
 #define EEPROM_VCC_Pin GPIO_PIN_0
@@ -95,6 +95,8 @@ void Error_Handler(void);
 #define LEDC_A1_GPIO_Port GPIOB
 #define LEDC_A4_Pin GPIO_PIN_4
 #define LEDC_A4_GPIO_Port GPIOB
+#define NCODER_BTN_Pin GPIO_PIN_5
+#define NCODER_BTN_GPIO_Port GPIOB
 #define LEDC_B_Pin GPIO_PIN_6
 #define LEDC_B_GPIO_Port GPIOB
 #define LEDC_A3_Pin GPIO_PIN_7

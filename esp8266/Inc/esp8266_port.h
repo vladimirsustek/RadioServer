@@ -61,4 +61,11 @@ uint32_t ESP_ComInit(void);
 uint32_t ESP_SendCommand(const char* const pStrCmd, const uint32_t lng);
 uint32_t ESP_CheckRX_DMA_XUART(const uint32_t timeout);
 
+uint32_t ESP_Start_TimeTick(void);
+void ESP_IncrementTick(void);
+void ESP_IncrementTime(void);
+uint32_t ESP_GetTick(void);
+uint32_t ESP_GetTime(void);
+void ESP_SeTime(uint32_t time);
+
 #endif /* ESP8266_PORT_H_ */

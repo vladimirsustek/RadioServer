@@ -10,6 +10,13 @@
 char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<body>\n\
 				<h1>RDA5807 control page</h1>\n\
+				<form action=\"/pageIndex ST_TIME\">\n\
+				<input type=\"text\" id=\"time\" name=\"time\" value=\"HHMM\"><br><br>\n\
+				<input type=\"submit\" value=\"SetTime\">\n\
+				</form>\n\
+				<br>\n\
+				<br>\n\
+				<br>\n\
 				<form action=\"/pageIndex DO_INITrn\">\n\
 				<input type=\"submit\" value=\"Initialize\">\n\
 				</form>\n\
@@ -21,8 +28,6 @@ char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<form action=\"/pageIndex ST_MUTE\r\n\">\n\
 				<input type=\"submit\" value=\"(Un)Mute\">\n\
 				</form>\n\
-				<br>\n\
-				<br>\n\
 				<br>\n\
 				<form action=\"/pageIndex ST_VOLM\">\n\
 				<input type=\"text\" id=\"volm\" name=\"volm\" value=\"\"><br><br>\n\

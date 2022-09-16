@@ -121,13 +121,18 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_USART3_UART_Init();
   MX_SPI1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
 
   LEDC_InitHW();
 
   // Checks EEPROM functionality and also reads the systemGlobalState
   // stored in the EEPROM containing last frequency, volume
   MAIN_EEPROM_CheckIfOk();
+
+  ESP_Start_TimeTick();
+
 
   if(0 == systemGlobalState.states.eepromFunctional)
   {
@@ -136,7 +141,9 @@ int main(void)
 
   RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
 
+
   MAIN_ESP_InitConnect();
+
 
   /* USER CODE END 2 */
 
@@ -259,11 +266,12 @@ void MAIN_ModuleCheckStates(void)
 	static uint32_t prevTick;
 	static uint8_t informationFSM = 0;
 	uint8_t anyFault = 0;
+	char message[32] = {0};
 
-	if(prevTick + 30*1000 < HAL_GetTick() && !LEDC_GetRollingStatus())
+	if(prevTick + 45*1000 < HAL_GetTick() && !LEDC_GetRollingStatus())
 	{
-		char message[32] = {0};
 
+		LEDC_StopStandingText();
 
 		switch(informationFSM)
 		{
@@ -271,6 +279,8 @@ void MAIN_ModuleCheckStates(void)
 		{
 			if(!MAIN_EEPROM_CheckIfOk())
 			{
+				  // ensure the string is displayed
+			    while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
 				anyFault = 1;
 			}
@@ -289,6 +299,8 @@ void MAIN_ModuleCheckStates(void)
 			{
 				// inform, save the state and try to re-init
 				systemGlobalState.states.rdaFunctional = 0;
+				  // ensure the string is displayed
+			    while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
 				anyFault = 1;
 				RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
@@ -315,6 +327,8 @@ void MAIN_ModuleCheckStates(void)
 			if(NULL == ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
 			{
 				systemGlobalState.states.espConnected = 0;
+				  // ensure the string is displayed
+			    while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("offline", strlen("offline"));
 
 				anyFault = 1;
@@ -331,6 +345,8 @@ void MAIN_ModuleCheckStates(void)
 			if(NULL == ESP_CheckResponse("+CIPMUX:1", strlen("+CIPMUX:1"), ESP_TIMEOUT_300ms))
 			{
 				systemGlobalState.states.espConnected = 0;
+				  // ensure the string is displayed
+			    while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("offline", strlen("offline"));
 
 				anyFault = 1;
@@ -339,6 +355,9 @@ void MAIN_ModuleCheckStates(void)
 			}
 			else
 			{
+				// Shows server's IP address where can client connect
+				// +CIFSR:STAIP,"192.yyy.0.108"
+				// +CIFSR:STAMAC,"xx:3a:e8:0b:76:53"
 				ESP_SendCommand("AT+CIFSR\r\n", strlen("AT+CIFSR\r\n"));
 				uint8_t* ipStr = ESP_CheckResponse("+CIFSR:STAIP,", strlen("+CIFSR:STAIP,"), ESP_TIMEOUT_300ms) + strlen("+CIFSR:STAIP,");
 
@@ -362,6 +381,8 @@ void MAIN_ModuleCheckStates(void)
 					{
 						char ipAdr[15] = {0};
 						memcpy(ipAdr, ipStr + 1, idx -1);
+						  // ensure the string is displayed
+					    while(LEDC_GetRollingStatus()) { }
 						LEDC_SetNewRollingString(ipAdr, idx -1);
 					}
 				}
@@ -375,9 +396,13 @@ void MAIN_ModuleCheckStates(void)
 		if (anyFault) break;
 		case CHECK_FREQUENCY:
 		{
-			if(systemGlobalState.states.rdaFunctional)
+			if(systemGlobalState.states.rdaFunctional && !systemGlobalState.states.rdaIsMute)
 			{
-				sprintf(message, "frequency %d khz", systemGlobalState.radioFreq*10);
+				sprintf(message, "frequency %d.%d khz",
+						systemGlobalState.radioFreq / 100,
+						systemGlobalState.radioFreq % 100);
+				  // ensure the string is displayed
+			    while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString(message, strlen(message));
 			}
 
@@ -386,16 +411,13 @@ void MAIN_ModuleCheckStates(void)
 		break;
 		case CHECK_VOLUME:
 		{
-			if(systemGlobalState.states.rdaFunctional)
+			if(systemGlobalState.states.rdaFunctional && !systemGlobalState.states.rdaIsMute)
 			{
-				if(systemGlobalState.states.rdaIsMute)
-				{
-					sprintf(message, "muted");
-				}
-				else
-				{
-					sprintf(message, "volume %d", systemGlobalState.radioVolm);
-				}
+
+				sprintf(message, "volume %d", systemGlobalState.radioVolm);
+
+				  // ensure the string is displayed
+			    while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString(message, strlen(message));
 			}
 
@@ -409,6 +431,13 @@ void MAIN_ModuleCheckStates(void)
 
 		prevTick = HAL_GetTick();
 	}
+	else
+	{
+	    while(LEDC_GetRollingStatus()) { }
+		sprintf(message, "%02ld%02ld", (ESP_GetTime() & 0xFF000000) >> 24, (ESP_GetTime() & 0x0000FF00) >> 8);
+		LEDC_SetNewStandingText(message);
+	}
+
 }
 
 

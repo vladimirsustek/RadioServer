@@ -9182,14 +9182,12 @@ http://www.fairchildsemi.com/ds/LM/LM7805.pdf</description>
 <part name="Q6" library="transistor-small-signal" library_urn="urn:adsk.eagle:library:401" deviceset="BSS84" device="" package3d_urn="urn:adsk.eagle:package:28738/2"/>
 <part name="JP8" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
 <part name="JP9" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
-<part name="JP10" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP4E" device="" package3d_urn="urn:adsk.eagle:package:15463/1"/>
 <part name="JP11" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP4E" device="" package3d_urn="urn:adsk.eagle:package:15463/1"/>
 <part name="JP1" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
 <part name="JP2" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
 <part name="GND3" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
 <part name="GND4" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
 <part name="JP6" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
-<part name="JP12" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP4E" device="" package3d_urn="urn:adsk.eagle:package:15463/1"/>
 <part name="U$3" library="VladimirSustek" deviceset="ESP8266-ESP01" device=""/>
 <part name="ESP01-CAP" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
 <part name="GND10" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
@@ -9200,6 +9198,11 @@ http://www.fairchildsemi.com/ds/LM/LM7805.pdf</description>
 <part name="DC_CONN" library="VladimirSustek" deviceset="DC_CONN" device=""/>
 <part name="U$4" library="VladimirSustek" deviceset="2MM_JP4" device=""/>
 <part name="U$1" library="VladimirSustek" deviceset="STM32_BLUEPILL" device=""/>
+<part name="Q15" library="transistor-small-signal" library_urn="urn:adsk.eagle:library:401" deviceset="BSS123" device="" package3d_urn="urn:adsk.eagle:package:28738/2"/>
+<part name="R13" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0805" package3d_urn="urn:adsk.eagle:package:23553/2" value="10k"/>
+<part name="Q17" library="transistor-small-signal" library_urn="urn:adsk.eagle:library:401" deviceset="BSS84" device="" package3d_urn="urn:adsk.eagle:package:28738/2"/>
+<part name="JP4" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
+<part name="JP5" library="jumper" library_urn="urn:adsk.eagle:library:252" deviceset="JP1E" device="" package3d_urn="urn:adsk.eagle:package:15455/1"/>
 </parts>
 <sheets>
 <sheet>
@@ -9209,7 +9212,7 @@ WIFI module with
 fully sensed IOs and
 UART connectin to MCU</text>
 <text x="-91.44" y="86.36" size="1.778" layer="91">VOLTAGES for external amplifier modules</text>
-<text x="-30.48" y="-38.1" size="1.778" layer="91">3V3 - 5V I2C LEVEL SHIFTER FOR RDA5807</text>
+<text x="-7.62" y="-38.1" size="1.778" layer="91">3V3 - 5V I2C LEVEL SHIFTER FOR RDA5807</text>
 <text x="-327.66" y="66.04" size="1.778" layer="91">7x IRLM2803TR used instead of BSS123:
 
 Vgs treshold 1V
@@ -9233,7 +9236,7 @@ Q6-Q14: N mosfets to switch cathodes</text>
 <text x="-55.88" y="-43.18" size="1.778" layer="91">2mm jumper to
 used rda's default
 connector</text>
-<text x="-20.32" y="-43.18" size="1.778" layer="91"> IRLM2803TR used instead of BSS123</text>
+<text x="-7.62" y="-43.18" size="1.778" layer="91"> IRLM2803TR used instead of BSS123</text>
 <text x="-271.78" y="91.44" size="1.778" layer="91">Display measured per segment 2.1V/3.7mA (587ohm)
 3.3V suply per segment, available 220ohm resistors
 Therefore:
@@ -9243,6 +9246,7 @@ Current(ma) = 3300/587+220 = 4.2mA
 *330ohm could be better, but circuit is switched anyway</text>
 <text x="33.02" y="38.1" size="1.778" layer="91">Note that SWDIO, GND and SWDCLK will together
 with the RESET provide FLASH/DEBUG port</text>
+<text x="-20.32" y="76.2" size="1.778" layer="91">EEPROM MODULE</text>
 </plain>
 <instances>
 <instance part="U$2" gate="G$1" x="-132.08" y="-7.62" smashed="yes">
@@ -9429,10 +9433,6 @@ with the RESET provide FLASH/DEBUG port</text>
 <attribute name="NAME" x="104.14" y="72.39" size="1.778" layer="95"/>
 <attribute name="VALUE" x="104.14" y="65.405" size="1.778" layer="96"/>
 </instance>
-<instance part="JP10" gate="G$1" x="-12.7" y="66.04" smashed="yes">
-<attribute name="NAME" x="-13.97" y="68.58" size="1.778" layer="95" rot="R90"/>
-<attribute name="VALUE" x="-4.445" y="66.04" size="1.778" layer="96" rot="R90"/>
-</instance>
 <instance part="JP11" gate="G$1" x="-2.54" y="66.04" smashed="yes">
 <attribute name="NAME" x="-3.81" y="68.58" size="1.778" layer="95" rot="R90"/>
 <attribute name="VALUE" x="5.715" y="66.04" size="1.778" layer="96" rot="R90"/>
@@ -9455,10 +9455,6 @@ with the RESET provide FLASH/DEBUG port</text>
 <attribute name="NAME" x="-24.13" y="66.04" size="1.778" layer="95" rot="R90"/>
 <attribute name="VALUE" x="-17.145" y="66.04" size="1.778" layer="96" rot="R90"/>
 </instance>
-<instance part="JP12" gate="G$1" x="15.24" y="66.04" smashed="yes">
-<attribute name="NAME" x="13.97" y="68.58" size="1.778" layer="95" rot="R90"/>
-<attribute name="VALUE" x="23.495" y="66.04" size="1.778" layer="96" rot="R90"/>
-</instance>
 <instance part="U$3" gate="G$1" x="68.58" y="68.58" smashed="yes">
 <attribute name="NAME" x="63.5" y="81.28" size="1.778" layer="95"/>
 <attribute name="VALUE" x="63.5" y="78.74" size="1.778" layer="96"/>
@@ -9474,8 +9470,8 @@ with the RESET provide FLASH/DEBUG port</text>
 <attribute name="NAME" x="39.116" y="58.039" size="1.778" layer="95" rot="R180"/>
 <attribute name="VALUE" x="39.116" y="63.119" size="1.778" layer="96" rot="R180"/>
 </instance>
-<instance part="GND16" gate="1" x="58.42" y="-12.7" smashed="yes">
-<attribute name="VALUE" x="55.88" y="-15.24" size="1.778" layer="96"/>
+<instance part="GND16" gate="1" x="63.5" y="-40.64" smashed="yes">
+<attribute name="VALUE" x="60.96" y="-43.18" size="1.778" layer="96"/>
 </instance>
 <instance part="GND17" gate="1" x="-177.8" y="-76.2" smashed="yes">
 <attribute name="VALUE" x="-180.34" y="-78.74" size="1.778" layer="96"/>
@@ -9493,6 +9489,26 @@ with the RESET provide FLASH/DEBUG port</text>
 <instance part="U$1" gate="G$1" x="-5.08" y="27.94" smashed="yes">
 <attribute name="NAME" x="-35.56" y="22.86" size="1.778" layer="95" rot="R90"/>
 <attribute name="VALUE" x="-33.02" y="22.86" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="Q15" gate="G$1" x="63.5" y="-25.4" smashed="yes">
+<attribute name="NAME" x="58.42" y="-20.32" size="1.778" layer="95" rot="R90"/>
+<attribute name="VALUE" x="60.96" y="-20.32" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="R13" gate="G$1" x="63.5" y="-5.08" smashed="yes" rot="MR90">
+<attribute name="NAME" x="64.9986" y="-8.89" size="1.778" layer="95" rot="MR90"/>
+<attribute name="VALUE" x="60.198" y="-8.89" size="1.778" layer="96" rot="MR90"/>
+</instance>
+<instance part="Q17" gate="G$1" x="81.28" y="-15.24" smashed="yes" rot="MR180">
+<attribute name="NAME" x="83.82" y="-15.24" size="1.778" layer="95" rot="MR180"/>
+<attribute name="VALUE" x="83.82" y="-12.7" size="1.778" layer="96" rot="MR180"/>
+</instance>
+<instance part="JP4" gate="A" x="12.7" y="66.04" smashed="yes">
+<attribute name="NAME" x="11.43" y="66.04" size="1.778" layer="95" rot="R90"/>
+<attribute name="VALUE" x="18.415" y="66.04" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="JP5" gate="A" x="-10.16" y="66.04" smashed="yes">
+<attribute name="NAME" x="-8.89" y="68.58" size="1.778" layer="95" rot="R90"/>
+<attribute name="VALUE" x="-4.445" y="66.04" size="1.778" layer="96" rot="R90"/>
 </instance>
 </instances>
 <busses>
@@ -9633,6 +9649,11 @@ with the RESET provide FLASH/DEBUG port</text>
 <pinref part="GND17" gate="1" pin="GND"/>
 <wire x1="-177.8" y1="-71.12" x2="-177.8" y2="-73.66" width="0.1524" layer="91"/>
 </segment>
+<segment>
+<pinref part="GND16" gate="1" pin="GND"/>
+<pinref part="Q15" gate="G$1" pin="S"/>
+<wire x1="63.5" y1="-38.1" x2="63.5" y2="-30.48" width="0.1524" layer="91"/>
+</segment>
 </net>
 <net name="3V3" class="0">
 <segment>
@@ -9704,20 +9725,6 @@ with the RESET provide FLASH/DEBUG port</text>
 <pinref part="U$1" gate="G$1" pin="5V"/>
 </segment>
 <segment>
-<pinref part="R3" gate="G$1" pin="2"/>
-<wire x1="-10.16" y1="-50.8" x2="-10.16" y2="-45.72" width="0.1524" layer="91"/>
-<wire x1="-10.16" y1="-45.72" x2="-17.78" y2="-45.72" width="0.1524" layer="91"/>
-<pinref part="R4" gate="G$1" pin="2"/>
-<wire x1="-17.78" y1="-50.8" x2="-17.78" y2="-45.72" width="0.1524" layer="91"/>
-<junction x="-17.78" y="-45.72"/>
-<label x="-22.86" y="-45.72" size="1.778" layer="95" rot="MR0"/>
-<wire x1="-17.78" y1="-45.72" x2="-38.1" y2="-45.72" width="0.1524" layer="91"/>
-<wire x1="-38.1" y1="-45.72" x2="-38.1" y2="-60.96" width="0.1524" layer="91"/>
-<wire x1="-38.1" y1="-60.96" x2="-50.8" y2="-60.96" width="0.1524" layer="91"/>
-<wire x1="-50.8" y1="-60.96" x2="-50.8" y2="-55.88" width="0.1524" layer="91"/>
-<pinref part="U$4" gate="G$1" pin="3"/>
-</segment>
-<segment>
 <pinref part="IC1" gate="A1" pin="VO"/>
 <wire x1="-119.38" y1="-58.42" x2="-116.84" y2="-58.42" width="0.1524" layer="91"/>
 <pinref part="C4" gate="G$1" pin="1"/>
@@ -9731,16 +9738,15 @@ with the RESET provide FLASH/DEBUG port</text>
 <junction x="-109.22" y="-58.42"/>
 </segment>
 <segment>
-<pinref part="JP1" gate="A" pin="1"/>
-<wire x1="-73.66" y1="68.58" x2="-73.66" y2="63.5" width="0.1524" layer="91"/>
-<wire x1="-73.66" y1="63.5" x2="-81.28" y2="63.5" width="0.1524" layer="91"/>
-<label x="-81.28" y="63.5" size="1.778" layer="95"/>
+<label x="63.5" y="2.54" size="1.778" layer="95" rot="R90"/>
+<wire x1="63.5" y1="0" x2="63.5" y2="5.08" width="0.1524" layer="91"/>
+<pinref part="R13" gate="G$1" pin="2"/>
 </segment>
 <segment>
-<pinref part="JP2" gate="A" pin="1"/>
-<wire x1="-60.96" y1="68.58" x2="-60.96" y2="63.5" width="0.1524" layer="91"/>
-<wire x1="-60.96" y1="63.5" x2="-68.58" y2="63.5" width="0.1524" layer="91"/>
-<label x="-68.58" y="63.5" size="1.778" layer="95"/>
+<pinref part="Q17" gate="G$1" pin="S"/>
+<wire x1="81.28" y1="-20.32" x2="81.28" y2="-40.64" width="0.1524" layer="91"/>
+<wire x1="81.28" y1="-40.64" x2="73.66" y2="-40.64" width="0.1524" layer="91"/>
+<label x="73.66" y="-40.64" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="RESET" class="0">
@@ -9767,9 +9773,9 @@ with the RESET provide FLASH/DEBUG port</text>
 <pinref part="U$3" gate="G$1" pin="TX"/>
 </segment>
 <segment>
-<wire x1="5.08" y1="48.26" x2="5.08" y2="63.5" width="0.1524" layer="91"/>
-<label x="5.08" y="53.34" size="1.778" layer="95" rot="R90"/>
-<pinref part="U$1" gate="G$1" pin="RX2"/>
+<pinref part="U$1" gate="G$1" pin="SCL2"/>
+<wire x1="-12.7" y1="48.26" x2="-12.7" y2="63.5" width="0.1524" layer="91"/>
+<label x="-12.7" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="ESP-RST" class="0">
@@ -9799,9 +9805,9 @@ with the RESET provide FLASH/DEBUG port</text>
 <pinref part="U$3" gate="G$1" pin="RX"/>
 </segment>
 <segment>
-<wire x1="7.62" y1="48.26" x2="7.62" y2="63.5" width="0.1524" layer="91"/>
-<label x="7.62" y="53.34" size="1.778" layer="95" rot="R90"/>
-<pinref part="U$1" gate="G$1" pin="TX2"/>
+<pinref part="U$1" gate="G$1" pin="SDA2"/>
+<wire x1="-15.24" y1="48.26" x2="-15.24" y2="63.5" width="0.1524" layer="91"/>
+<label x="-15.24" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="ESP-IO0" class="0">
@@ -9907,9 +9913,9 @@ with the RESET provide FLASH/DEBUG port</text>
 <pinref part="Q4" gate="G$1" pin="G"/>
 </segment>
 <segment>
-<wire x1="-5.08" y1="7.62" x2="-5.08" y2="-15.24" width="0.1524" layer="91"/>
-<label x="-5.08" y="-15.24" size="1.778" layer="95" rot="R90"/>
-<pinref part="U$1" gate="G$1" pin="IO4"/>
+<pinref part="U$1" gate="G$1" pin="IO9"/>
+<wire x1="7.62" y1="7.62" x2="7.62" y2="-15.24" width="0.1524" layer="91"/>
+<label x="7.62" y="-15.24" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="LEDC_A4" class="0">
@@ -10178,9 +10184,9 @@ with the RESET provide FLASH/DEBUG port</text>
 <label x="-299.72" y="27.94" size="1.778" layer="95"/>
 </segment>
 <segment>
-<wire x1="-7.62" y1="7.62" x2="-7.62" y2="-15.24" width="0.1524" layer="91"/>
-<label x="-7.62" y="-15.24" size="1.778" layer="95" rot="R90"/>
-<pinref part="U$1" gate="G$1" pin="IO3"/>
+<pinref part="U$1" gate="G$1" pin="IO10"/>
+<wire x1="10.16" y1="7.62" x2="10.16" y2="-15.24" width="0.1524" layer="91"/>
+<label x="10.16" y="-15.24" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="LEDC_F" class="0">
@@ -10255,60 +10261,44 @@ with the RESET provide FLASH/DEBUG port</text>
 <pinref part="DC_CONN" gate="G$1" pin="BUS"/>
 </segment>
 </net>
-<net name="N$3" class="0">
+<net name="EE_GND" class="0">
 <segment>
-<pinref part="JP10" gate="G$1" pin="1"/>
-<wire x1="-15.24" y1="63.5" x2="-15.24" y2="48.26" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="SDA2"/>
-</segment>
-</net>
-<net name="N$4" class="0">
-<segment>
-<pinref part="JP10" gate="G$1" pin="2"/>
-<wire x1="-12.7" y1="63.5" x2="-12.7" y2="48.26" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="SCL2"/>
-</segment>
-</net>
-<net name="N$5" class="0">
-<segment>
-<pinref part="JP10" gate="G$1" pin="3"/>
 <wire x1="-10.16" y1="63.5" x2="-10.16" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="IOA11"/>
+<pinref part="JP5" gate="A" pin="1"/>
+<label x="-10.16" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
-<net name="N$6" class="0">
+<net name="EE_VCC" class="0">
 <segment>
-<pinref part="JP10" gate="G$1" pin="4"/>
 <wire x1="-7.62" y1="63.5" x2="-7.62" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="IOA12"/>
+<pinref part="JP5" gate="A" pin="2"/>
+<label x="-7.62" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
-<net name="N$7" class="0">
+<net name="EE_MOSI" class="0">
 <segment>
 <pinref part="JP11" gate="G$1" pin="1"/>
 <wire x1="-5.08" y1="63.5" x2="-5.08" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="IOA13"/>
+<label x="-5.08" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
-<net name="N$8" class="0">
-<segment>
-<pinref part="JP11" gate="G$1" pin="2"/>
-<wire x1="-2.54" y1="63.5" x2="-2.54" y2="48.26" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="IOA14"/>
-</segment>
-</net>
-<net name="N$9" class="0">
+<net name="EE_SCK" class="0">
 <segment>
 <pinref part="JP11" gate="G$1" pin="3"/>
 <wire x1="0" y1="63.5" x2="0" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="IOA15"/>
+<label x="0" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
-<net name="N$10" class="0">
+<net name="EE_NCS" class="0">
 <segment>
 <pinref part="JP11" gate="G$1" pin="4"/>
 <wire x1="2.54" y1="63.5" x2="2.54" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="IOA16"/>
+<label x="2.54" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 <net name="3V3'" class="0">
@@ -10321,30 +10311,80 @@ with the RESET provide FLASH/DEBUG port</text>
 </net>
 <net name="N$11" class="0">
 <segment>
-<pinref part="JP12" gate="G$1" pin="1"/>
 <wire x1="12.7" y1="63.5" x2="12.7" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="IOA18"/>
+<pinref part="JP4" gate="A" pin="1"/>
 </segment>
 </net>
 <net name="N$12" class="0">
 <segment>
-<pinref part="JP12" gate="G$1" pin="2"/>
 <wire x1="15.24" y1="63.5" x2="15.24" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="G$1" pin="IO19"/>
+<pinref part="JP4" gate="A" pin="2"/>
 </segment>
 </net>
-<net name="N$13" class="0">
+<net name="5V_S" class="0">
 <segment>
-<pinref part="JP12" gate="G$1" pin="3"/>
-<wire x1="17.78" y1="63.5" x2="17.78" y2="48.26" width="0.1524" layer="91"/>
+<pinref part="Q17" gate="G$1" pin="D"/>
+<wire x1="81.28" y1="-10.16" x2="81.28" y2="5.08" width="0.1524" layer="91"/>
+<label x="81.28" y="0" size="1.778" layer="95" rot="R90"/>
+</segment>
+<segment>
+<pinref part="U$4" gate="G$1" pin="3"/>
+<wire x1="-50.8" y1="-55.88" x2="-50.8" y2="-58.42" width="0.1524" layer="91"/>
+<wire x1="-50.8" y1="-58.42" x2="-25.4" y2="-58.42" width="0.1524" layer="91"/>
+<wire x1="-25.4" y1="-58.42" x2="-25.4" y2="-45.72" width="0.1524" layer="91"/>
+<wire x1="-25.4" y1="-45.72" x2="-17.78" y2="-45.72" width="0.1524" layer="91"/>
+<pinref part="R4" gate="G$1" pin="2"/>
+<wire x1="-17.78" y1="-45.72" x2="-17.78" y2="-50.8" width="0.1524" layer="91"/>
+<pinref part="R3" gate="G$1" pin="2"/>
+<wire x1="-10.16" y1="-50.8" x2="-10.16" y2="-45.72" width="0.1524" layer="91"/>
+<wire x1="-10.16" y1="-45.72" x2="-17.78" y2="-45.72" width="0.1524" layer="91"/>
+<junction x="-17.78" y="-45.72"/>
+<label x="-25.4" y="-45.72" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="JP1" gate="A" pin="1"/>
+<wire x1="-73.66" y1="68.58" x2="-73.66" y2="63.5" width="0.1524" layer="91"/>
+<wire x1="-73.66" y1="63.5" x2="-81.28" y2="63.5" width="0.1524" layer="91"/>
+<label x="-81.28" y="63.5" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="JP2" gate="A" pin="1"/>
+<wire x1="-60.96" y1="68.58" x2="-60.96" y2="63.5" width="0.1524" layer="91"/>
+<wire x1="-60.96" y1="63.5" x2="-68.58" y2="63.5" width="0.1524" layer="91"/>
+<label x="-68.58" y="63.5" size="1.778" layer="95"/>
+</segment>
+</net>
+<net name="N$15" class="0">
+<segment>
+<pinref part="Q15" gate="G$1" pin="D"/>
+<wire x1="63.5" y1="-20.32" x2="63.5" y2="-17.78" width="0.1524" layer="91"/>
+<pinref part="R13" gate="G$1" pin="1"/>
+<pinref part="Q17" gate="G$1" pin="G"/>
+<wire x1="63.5" y1="-17.78" x2="63.5" y2="-10.16" width="0.1524" layer="91"/>
+<wire x1="76.2" y1="-17.78" x2="63.5" y2="-17.78" width="0.1524" layer="91"/>
+<junction x="63.5" y="-17.78"/>
+</segment>
+</net>
+<net name="RDA_SWITCH_PWR" class="0">
+<segment>
+<pinref part="Q15" gate="G$1" pin="G"/>
+<wire x1="58.42" y1="-27.94" x2="45.72" y2="-27.94" width="0.1524" layer="91"/>
+<label x="35.56" y="-27.94" size="1.778" layer="95"/>
+</segment>
+<segment>
 <pinref part="U$1" gate="G$1" pin="IO20"/>
+<wire x1="17.78" y1="48.26" x2="17.78" y2="63.5" width="0.1524" layer="91"/>
+<label x="17.78" y="50.8" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
-<net name="N$14" class="0">
+<net name="EE_MISO" class="0">
 <segment>
-<pinref part="JP12" gate="G$1" pin="4"/>
-<wire x1="20.32" y1="63.5" x2="20.32" y2="48.26" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="IO21"/>
+<pinref part="JP11" gate="G$1" pin="2"/>
+<wire x1="-2.54" y1="63.5" x2="-2.54" y2="48.26" width="0.1524" layer="91"/>
+<pinref part="U$1" gate="G$1" pin="IOA14"/>
+<label x="-2.54" y="53.34" size="1.778" layer="95" rot="R90"/>
 </segment>
 </net>
 </nets>

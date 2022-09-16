@@ -189,6 +189,10 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 			sprintf(auxStr, "DO_INIT\r\n");
 			CmdRDA5807mDoInit(pBuff, strlen(auxStr));
 		}
+		if(ESP_ExtractValue("time=", pHTTPReq, hhhtReqLng, &value) && ESP_ExtractString("ST_TIME", pHTTPReq, hhhtReqLng, &DummyLng))
+		{
+			ESP_SeTime(((value / 100) << 24) + ((value % 100) << 8));
+		}
 		if(ESP_ExtractString("DO_RSET", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
 			sprintf(auxStr, "DO_RSET\r\n");
