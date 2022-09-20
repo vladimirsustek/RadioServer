@@ -191,7 +191,13 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 		}
 		if(ESP_ExtractValue("time=", pHTTPReq, hhhtReqLng, &value) && ESP_ExtractString("ST_TIME", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			ESP_SeTime(((value / 100) << 24) + ((value % 100) << 8));
+			ESP_SetTime(((value / 100) << 24) + ((value % 100) << 8));
+		}
+		if(ESP_ExtractString("ST_TISH", pHTTPReq, hhhtReqLng, &DummyLng))
+		{
+			EEPROM_GetSystemState();
+			systemGlobalState.states.displayTime ^= 1;
+			EEPROM_SetSystemState();
 		}
 		if(ESP_ExtractString("DO_RSET", pHTTPReq, hhhtReqLng, &DummyLng))
 		{

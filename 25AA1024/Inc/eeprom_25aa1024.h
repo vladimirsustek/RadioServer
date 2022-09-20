@@ -59,7 +59,8 @@ typedef struct sys_state_flags
 	        rdaIsMute : 1,
 			espConnected : 1,
 			eepromFunctional : 1,
-	        dummy0xA : 4;
+			displayTime : 1,
+	        dummy0x5 : 3;
 }sys_state_flags_t;
 
 typedef struct sys_state

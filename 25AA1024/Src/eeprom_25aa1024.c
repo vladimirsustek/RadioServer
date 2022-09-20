@@ -139,16 +139,8 @@ uint32_t EEPROM_WriteStatusRegister(uint8_t value)
 
 uint32_t EEPROM_Init(void)
 {
-	uint32_t result[2] = {0};
-
-	/* Turn on the GPIOs powering the EEPROM module */
-	//HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(EEPROM_GND_GPIO_Port, EEPROM_GND_Pin, GPIO_PIN_RESET);
-
-	if (0 == result[0] && 0 == result[1])
-		return 0u;
-	else
-		return (uint32_t)(-1);
+	/*mocked*/
+	return 0u;
 }
 
 /*Write across the 256-byte page not handled */
@@ -194,10 +186,6 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t size)
 	uint16_t bytesToWrite = size;
     uint16_t cycleSize = (bytesToWrite > maxCycleSize) ? maxCycleSize : bytesToWrite;
 
-    /* Turn on the EEPROM and wait (just guessed 100ms )to start up*/
-	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-
 	while(bytesToWrite)
 	{
 		result += EEPROM_WriteDataNoLogic(
@@ -225,9 +213,6 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t size)
 
 	result = (result != 0) ? -1 : 0;
 
-    /* Turn off the EEPROM */
-	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_RESET);
-
 	return result;
 }
 
@@ -244,10 +229,6 @@ uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 		return (uint32_t)(-1);
 	}
 
-    /* Turn on the EEPROM and wait (just guessed 100ms )to start up*/
-	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-
 	startWrite[0] = EEPROM_READ;
 	startWrite[1] = (address & 0x00FF0000) >> 16;
 	startWrite[2] = (address & 0x0000FF00) >> 8;
@@ -262,9 +243,6 @@ uint32_t EEPROM_ReadData(uint32_t address, uint8_t *pData, uint16_t Size)
 		return 0u;
 	else
 		return (uint32_t)(-1);
-
-    /* Turn off the EEPROM*/
-	HAL_GPIO_WritePin(EEPROM_VCC_GPIO_Port, EEPROM_VCC_Pin, GPIO_PIN_RESET);
 
 }
 

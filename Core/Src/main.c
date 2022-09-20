@@ -20,6 +20,7 @@
 #include "main.h"
 #include "dma.h"
 #include "i2c.h"
+#include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -39,6 +40,8 @@
 #include "cmd_dispatcher.h"
 #include "eeprom_25aa1024.h"
 
+#include "bmp280.h"
+#include "app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,12 +51,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define CHECK_EEPROM	(uint8_t)(0)
-#define CHECK_RADIO		(uint8_t)(1)
-#define CHECK_WIFI		(uint8_t)(2)
-#define CHECK_FREQUENCY	(uint8_t)(3)
-#define CHECK_VOLUME	(uint8_t)(4)
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,10 +68,6 @@ DMA_HandleTypeDef hdma_usart2_rx;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void MAIN_ShortcutUSB(void);
-void MAIN_ModuleCheckStates(void);
-uint8_t MAIN_EEPROM_CheckIfOk(void);
-void MAIN_ESP_InitConnect(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -90,10 +83,8 @@ int main(void)
   /* USER CODE BEGIN 1 */
 	uint8_t* rxStrBuff = NULL;
 	char *pHTTPReq = NULL;
-
-   uint32_t rxStrlng;
-
-   uint32_t httpReqLng = 0;
+    uint32_t rxStrlng;
+    uint32_t httpReqLng = 0;
 
   /* USER CODE END 1 */
 
@@ -110,7 +101,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  MAIN_ShortcutUSB();
+  APP_ShortcutUSB();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -122,28 +113,15 @@ int main(void)
   MX_USART3_UART_Init();
   MX_SPI1_Init();
   MX_TIM3_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
 
-
-  LEDC_InitHW();
-
-  // Checks EEPROM functionality and also reads the systemGlobalState
-  // stored in the EEPROM containing last frequency, volume
-  MAIN_EEPROM_CheckIfOk();
-
-  ESP_Start_TimeTick();
-
-
-  if(0 == systemGlobalState.states.eepromFunctional)
-  {
-	  LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
-  }
-
-  RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
-
-
-  MAIN_ESP_InitConnect();
-
+  APP_LEDC_DisplayInit();
+  APP_RDA5807M_RadioInit();
+  APP_BMP280_SensorInit();
+  APP_EEPROM_CheckIfOk();
+  APP_ESP_InitConnect();
+  APP_RTC_Init();
 
   /* USER CODE END 2 */
 
@@ -172,11 +150,12 @@ int main(void)
           ESP_ProcessHTTP(pHTTPReq, httpReqLng);
       }
 
-      // 1x per 30 second check whether:
+      // 1x per timeout (in milliseconds) check whether:
       // 				ESP is connected to WIFI
       //				RDA is functional (RSSI > 0)
       // If RDA is functional inform about freq and volm
-      MAIN_ModuleCheckStates();
+      // And rest of the time show temperature and time
+      APP_ModuleCheckStates(60*1000);
 
   }
   /* USER CODE END 3 */
@@ -195,10 +174,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
@@ -219,7 +199,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_USB;
+  PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
   PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -228,258 +209,8 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-/*printf <=> uart redirection */
-int _write(int file, char *ptr, int len)
-{
-	CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
-	return len;
-}
-
-/* Simulates that the USB was disconnected and so allows new USB insert*/
-void MAIN_ShortcutUSB(void)
-{
-	  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-	  /* GPIO Ports Clock Enable */
-	  __HAL_RCC_GPIOA_CLK_ENABLE();
-
-	  /*Configure GPIO pin Output Level Low */
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-
-	  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_11;
-	  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	  GPIO_InitStruct.Pull = GPIO_NOPULL;
-	  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-	  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-	  HAL_Delay(2000);
-
-	  HAL_GPIO_DeInit(GPIOA, GPIO_PIN_12|GPIO_PIN_11);
-
-	  __HAL_RCC_GPIOA_CLK_DISABLE();
-}
-
-void MAIN_ModuleCheckStates(void)
-{
-	static uint32_t prevTick;
-	static uint8_t informationFSM = 0;
-	uint8_t anyFault = 0;
-	char message[32] = {0};
-
-	if(prevTick + 45*1000 < HAL_GetTick() && !LEDC_GetRollingStatus())
-	{
-
-		LEDC_StopStandingText();
-
-		switch(informationFSM)
-		{
-		case CHECK_EEPROM:
-		{
-			if(!MAIN_EEPROM_CheckIfOk())
-			{
-				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
-				anyFault = 1;
-			}
-			else
-			{
-				anyFault = 0;
-			}
-
-			informationFSM = CHECK_RADIO;
-		}
-		if (anyFault) break;
-		case CHECK_RADIO:
-		{
-			// Receiver signal strength is always > 0
-			if(0 == RDA5807mGetRSSI())
-			{
-				// inform, save the state and try to re-init
-				systemGlobalState.states.rdaFunctional = 0;
-				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
-				anyFault = 1;
-				RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
-			}
-			else
-			{
-				anyFault = 0;
-				systemGlobalState.states.rdaFunctional = 1;
-			}
-
-			informationFSM = CHECK_WIFI;
-
-		}
-		if (anyFault) break;
-		case CHECK_WIFI:
-		{
-			// 1) Are we connected ? (AT+CWJAP?)
-			// 2) Are we providing a server ? (AT+CIPMUX?)
 
 
-			ESP_SendCommand("AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"));
-			// either +CWJAP:"SSID","MAC address" ..  OK
-			// or No AP OK
-			if(NULL == ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
-			{
-				systemGlobalState.states.espConnected = 0;
-				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("offline", strlen("offline"));
-
-				anyFault = 1;
-				// Try to re-init
-				MAIN_ESP_InitConnect();
-			}
-			else
-			{
-				anyFault = 0;
-			}
-
-			ESP_SendCommand("AT+CIPMUX?\r\n", strlen("AT+CIPMUX?\r\n"));
-
-			if(NULL == ESP_CheckResponse("+CIPMUX:1", strlen("+CIPMUX:1"), ESP_TIMEOUT_300ms))
-			{
-				systemGlobalState.states.espConnected = 0;
-				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("offline", strlen("offline"));
-
-				anyFault = 1;
-				// Try to re-init
-				MAIN_ESP_InitConnect();
-			}
-			else
-			{
-				// Shows server's IP address where can client connect
-				// +CIFSR:STAIP,"192.yyy.0.108"
-				// +CIFSR:STAMAC,"xx:3a:e8:0b:76:53"
-				ESP_SendCommand("AT+CIFSR\r\n", strlen("AT+CIFSR\r\n"));
-				uint8_t* ipStr = ESP_CheckResponse("+CIFSR:STAIP,", strlen("+CIFSR:STAIP,"), ESP_TIMEOUT_300ms) + strlen("+CIFSR:STAIP,");
-
-				if(ipStr)
-				{
-					uint8_t idx = 0;
-					uint8_t quotationMarkCnt = 0;
-					for(idx = 0; idx < 17; idx++)
-					{
-
-						if('"' == ipStr[idx])
-						{
-							quotationMarkCnt++;
-						}
-						if(quotationMarkCnt == 2)
-						{
-							break;
-						}
-					}
-					if(2 == quotationMarkCnt)
-					{
-						char ipAdr[15] = {0};
-						memcpy(ipAdr, ipStr + 1, idx -1);
-						  // ensure the string is displayed
-					    while(LEDC_GetRollingStatus()) { }
-						LEDC_SetNewRollingString(ipAdr, idx -1);
-					}
-				}
-
-
-
-				anyFault = 0;
-			}
-			informationFSM = CHECK_FREQUENCY;
-		}
-		if (anyFault) break;
-		case CHECK_FREQUENCY:
-		{
-			if(systemGlobalState.states.rdaFunctional && !systemGlobalState.states.rdaIsMute)
-			{
-				sprintf(message, "frequency %d.%d khz",
-						systemGlobalState.radioFreq / 100,
-						systemGlobalState.radioFreq % 100);
-				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString(message, strlen(message));
-			}
-
-			informationFSM = CHECK_VOLUME;
-		}
-		break;
-		case CHECK_VOLUME:
-		{
-			if(systemGlobalState.states.rdaFunctional && !systemGlobalState.states.rdaIsMute)
-			{
-
-				sprintf(message, "volume %d", systemGlobalState.radioVolm);
-
-				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString(message, strlen(message));
-			}
-
-			informationFSM = CHECK_EEPROM;
-		}
-		default :
-		{
-			/* Show time as a standing string */
-		}
-		}
-
-		prevTick = HAL_GetTick();
-	}
-	else
-	{
-	    while(LEDC_GetRollingStatus()) { }
-		sprintf(message, "%02ld%02ld", (ESP_GetTime() & 0xFF000000) >> 24, (ESP_GetTime() & 0x0000FF00) >> 8);
-		LEDC_SetNewStandingText(message);
-	}
-
-}
-
-
-uint8_t MAIN_EEPROM_CheckIfOk(void)
-{
-	/* not needed to store into eeprom that the eeprom works*/
-	EEPROM_GetSystemState();
-	if (0xA == systemGlobalState.states.dummy0xA)
-	{
-		systemGlobalState.states.eepromFunctional = 1;
-	}
-	else
-	{
-		systemGlobalState.states.eepromFunctional = 0;
-	}
-
-	return (uint8_t)systemGlobalState.states.eepromFunctional;
-
-}
-
-void MAIN_ESP_InitConnect(void)
-{
-	  // ensure the string is displayed
-      while(LEDC_GetRollingStatus()) { }
-	  LEDC_SetNewInfiniteRollingString("Connecting");
-
-	  if(ESP_RET_OK != ESP_HTTPinit())
-	  {
-		  // Stop string Connecting and ensure the second string is displayed
-		  LEDC_StopInfiniteRollingString();
-		  while(LEDC_GetRollingStatus());
-		  LEDC_SetNewRollingString("ESP Init fault", strlen("ESP Init fault"));
-	  }
-	  else
-	  {
-		  // Stop string Connecting and ensure the second string is displayed
-		  LEDC_StopInfiniteRollingString();
-		  while(LEDC_GetRollingStatus());
-		  LEDC_SetNewRollingString("ESP Connected", strlen("ESP Connected"));
-	  }
-
-}
 
 /* USER CODE END 4 */
 

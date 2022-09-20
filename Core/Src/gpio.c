@@ -51,30 +51,39 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GREEN_LED_Pin|RDA_SWITCH_PWR_Pin|NCODER_CLK_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SPI1_NCS_Pin|LEDC_A2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, RDA_SWITCH_PWR_Pin|SPI1_NCS_Pin|LEDC_A2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, EEPROM_VCC_Pin|LEDC_A1_Pin|LEDC_A4_Pin|LEDC_A3_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, BMP_CS_Pin|LEDC_A1_Pin|LEDC_A4_Pin|LEDC_A3_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, EEPROM_GND_Pin|LEDC_E_Pin|LEDC_D_Pin|LEDC_DP_Pin
-                          |LEDC_C_Pin|NCODER_BTN_Pin|LEDC_B_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LEDC_E_Pin|LEDC_D_Pin|LEDC_DP_Pin|LEDC_C_Pin
+                          |NCODER_CLK_Pin|LEDC_B_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LEDC_G_Pin|LEDC_A_Pin|LEDC_F_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PCPin PCPin PCPin */
-  GPIO_InitStruct.Pin = GREEN_LED_Pin|RDA_SWITCH_PWR_Pin|NCODER_CLK_Pin;
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = GREEN_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(GREEN_LED_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PAPin PAPin PAPin PAPin
+                           PAPin */
+  GPIO_InitStruct.Pin = RDA_SWITCH_PWR_Pin|LEDC_G_Pin|LEDC_A_Pin|LEDC_F_Pin
+                          |LEDC_A2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PAPin PAPin PAPin */
-  GPIO_InitStruct.Pin = ESP_RST_Pin|NCODER_IN_Pin|FLOATING_PCB_ERROR_2_Pin;
+  GPIO_InitStruct.Pin = ESP_RST_Pin|NCODER_IN_Pin|NCODER_BTN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -88,21 +97,14 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PBPin PBPin PBPin PBPin
                            PBPin PBPin PBPin PBPin
-                           PBPin PBPin PBPin */
-  GPIO_InitStruct.Pin = EEPROM_VCC_Pin|EEPROM_GND_Pin|LEDC_E_Pin|LEDC_D_Pin
-                          |LEDC_DP_Pin|LEDC_C_Pin|LEDC_A1_Pin|LEDC_A4_Pin
-                          |NCODER_BTN_Pin|LEDC_B_Pin|LEDC_A3_Pin;
+                           PBPin PBPin */
+  GPIO_InitStruct.Pin = BMP_CS_Pin|LEDC_E_Pin|LEDC_D_Pin|LEDC_DP_Pin
+                          |LEDC_C_Pin|LEDC_A1_Pin|LEDC_A4_Pin|NCODER_CLK_Pin
+                          |LEDC_B_Pin|LEDC_A3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PAPin PAPin PAPin PAPin */
-  GPIO_InitStruct.Pin = LEDC_G_Pin|LEDC_A_Pin|LEDC_F_Pin|LEDC_A2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 

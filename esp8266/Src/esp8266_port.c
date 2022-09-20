@@ -223,7 +223,7 @@ uint32_t ESP_GetTime(void)
 
 }
 
-void ESP_SeTime(uint32_t time)
+void ESP_SetTime(uint32_t time)
 {
 	uint32_t hh = (time & 0xFF000000) >> 24;
 	uint32_t mm = (time & 0x0000FF00) >> 8;

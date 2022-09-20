@@ -11,13 +11,17 @@ char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<body>\n\
 				<h1>RDA5807 control page</h1>\n\
 				<form action=\"/pageIndex ST_TIME\">\n\
-				<input type=\"text\" id=\"time\" name=\"time\" value=\"HHMM\"><br><br>\n\
+				<input type=\"text\" id=\"time\" name=\"time\" value=\"1234\"><br><br>\n\
 				<input type=\"submit\" value=\"SetTime\">\n\
+				</form>\n\
+				<br>\n\
+				<form action=\"/pageIndex ST_TISH\r\n\">\n\
+				<input type=\"submit\" value=\"Enable Time\">\n\
 				</form>\n\
 				<br>\n\
 				<br>\n\
 				<br>\n\
-				<form action=\"/pageIndex DO_INITrn\">\n\
+				<form action=\"/pageIndex DO_INIT\r\n\">\n\
 				<input type=\"submit\" value=\"Initialize\">\n\
 				</form>\n\
 				<br>\n\

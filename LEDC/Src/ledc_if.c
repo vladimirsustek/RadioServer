@@ -136,6 +136,7 @@ static uint8_t ASCII27SEG(uint8_t ascii)
 	case '-': encoded = 0b01000000; break;
 	case '>': encoded = 0b01001100; break;
 	case '<': encoded = 0b01011000; break;
+	case '*': encoded = 0b01100011;	break;
 	default: encoded = 0x00; break;
 	}
 	return encoded;
@@ -287,13 +288,13 @@ uint32_t LEDC_PeriodicDisplayService(void)
 {
 	/* Routine takes  6-12us when core clock 56MHz*/
 	uint32_t stop = 0;
+	uint8_t withoutDot;
 
 	if (rollingStringBusyFlag)
 	{
 
-	    LEDC_WRITE_7SEG(ASCII27SEG(internalStrinBuff[textPointer + full7Segment]));
+		LEDC_WRITE_7SEG(ASCII27SEG(internalStrinBuff[textPointer + full7Segment]));
 		LEDC_WRITE_ANODES(multiplexedAnode);
-
 
 	    if (multiplexedAnode == LAST_ANODE)
 	    {

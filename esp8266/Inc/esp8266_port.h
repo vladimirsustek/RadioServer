@@ -66,6 +66,6 @@ void ESP_IncrementTick(void);
 void ESP_IncrementTime(void);
 uint32_t ESP_GetTick(void);
 uint32_t ESP_GetTime(void);
-void ESP_SeTime(uint32_t time);
+void ESP_SetTime(uint32_t time);
 
 #endif /* ESP8266_PORT_H_ */
