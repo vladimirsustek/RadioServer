@@ -288,7 +288,6 @@ uint32_t LEDC_PeriodicDisplayService(void)
 {
 	/* Routine takes  6-12us when core clock 56MHz*/
 	uint32_t stop = 0;
-	uint8_t withoutDot;
 
 	if (rollingStringBusyFlag)
 	{

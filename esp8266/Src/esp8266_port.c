@@ -107,8 +107,8 @@ uint32_t ESP_CheckRX_DMA_XUART(const uint32_t timeout)
 				uint32_t uartX_rx_write_ptr = (ESP_COM_BUFF_LNG - hdma_usart3_rx.Instance->CNDTR);
 				while (uartX_rx_read_ptr != uartX_rx_write_ptr)
 				{
-					/* Said my teacher is better ... to really get DMA content actualized .. Don't Know*/
-					__ISB();
+					/* Said my teacher that like this it is better ... to really get DMA content actualized .. Don't Know*/
+					__ISB(); // something like synchronize internal barriers and force core to refresh contents
 					/* Write received char into user buffer */
 					comUsrBuffer[comUserBufferMsgIdx][writtenChars] = uartX_rx_buf[uartX_rx_read_ptr];
 					/* Always push in front a null character (buffer element is UART_BUFFSIZE + 1) for better string handling */
