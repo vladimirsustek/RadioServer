@@ -20,7 +20,7 @@
 #define CHECK_RADIO_OP		(uint8_t)(4)
 
 void APP_ShortcutUSB(void);
-void APP_ModuleCheckStates(uint32_t timeout);
+void APP_ModuleCheckStates(void);
 uint8_t APP_EEPROM_CheckIfOk(void);
 void APP_ESP_InitConnect(void);
 void APP_RDA5807M_RADIO_Init(void);

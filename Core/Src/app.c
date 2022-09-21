@@ -8,6 +8,8 @@
 
 #include "app.h"
 
+static uint8_t fsm = 0;
+
 void APP_ShortcutUSB(void)
 {
 	  GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -40,7 +42,6 @@ uint8_t APP_CheckEEPROM(void)
 	{
 		  // ensure the string is displayed
 	    //while(LEDC_GetRollingStatus()) { }
-		LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
 		anyFault = 1;
 	}
 	else
@@ -60,7 +61,6 @@ uint8_t APP_CheckRadio(void)
 		systemGlobalState.states.rdaFunctional = 0;
 		  // ensure the string is displayed
 	    //while(LEDC_GetRollingStatus()) { }
-		LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
 		anyFault = 1;
 		RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
 	}
@@ -134,7 +134,6 @@ uint8_t APP_CheckWIFI(void)
 				char ipAdr[15] = {0};
 				memcpy(ipAdr, ipStr + 1, idx -1);
 				// ensure the string is displayed
-				//while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString(ipAdr, idx -1);
 			}
 		}
@@ -169,93 +168,90 @@ void APP_CheckTemperature(char* message)
 		temp = (temp < -9) ? -9 : temp;
 		sprintf(message, "%ld*C", temp/100);
 	}
-
-	LEDC_SetNewRollingString(message, strlen(message));
+	LEDC_SetStandingDot(0);
+	LEDC_SetNewStandingText(message);
 }
 
-void APP_CheckTime(char *message)
+void APP_CheckTime(char *message, RTC_TimeTypeDef* pRtc)
 {
-	RTC_TimeTypeDef rtc;
-
-	HAL_RTC_GetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
-	sprintf(message, "%02d%02d", rtc.Hours, rtc.Minutes);
+	LEDC_SetStandingDot(0);
+	sprintf(message, "%02d%02d", pRtc->Hours, pRtc->Minutes);
 	LEDC_SetStandingDot(2);
 	LEDC_SetNewStandingText(message);
 }
-void APP_ModuleCheckStates(uint32_t timeout)
+void APP_ModuleCheckStates(void)
 {
-	static uint32_t prevTick;
-	static uint32_t prevTime;
-	static uint8_t informationFSM = 0;
+	static uint8_t prevSeconds = 0;
 
-	uint8_t anyFault = 0;
 	char message[32] = {0};
 
-	if(prevTick + timeout < HAL_GetTick() && !LEDC_GetRollingStatus())
+	RTC_TimeTypeDef rtc;
+
+	HAL_RTC_GetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
+
+	if((rtc.Seconds != prevSeconds) && (9 == (rtc.Seconds % 10)) && !LEDC_GetRollingStatus())
 	{
+		prevSeconds = rtc.Seconds;
 
-		LEDC_StopStandingText();
-
-		switch(informationFSM)
+		switch(fsm)
 		{
-		case CHECK_EEPROM:
+		case 0:
+		case 2:
+		case 4:
+		case 8:
 		{
-			anyFault = APP_CheckEEPROM();
-			informationFSM = CHECK_RADIO;
-		}
-		if (anyFault) break;
-		case CHECK_RADIO:
-		{
-			anyFault = APP_CheckRadio();
-			informationFSM = CHECK_WIFI;
-		}
-		if (anyFault) break;
-		case CHECK_WIFI:
-		{
-			APP_CheckWIFI();
-			informationFSM = CHECK_TEMPERATURE;
+			APP_CheckTime(message, &rtc);
 		}
 		break;
-		case CHECK_TEMPERATURE:
+		case 1:
+		case 3:
+		case 5:
+		case 7:
+		case 9:
 		{
 			APP_CheckTemperature(message);
-			informationFSM = CHECK_RADIO_OP;
 		}
 		break;
-		case CHECK_RADIO_OP:
+		case 6 :
 		{
-			APP_CheckRadioOperation(message);
-			informationFSM = CHECK_EEPROM;
+			LEDC_StopStandingText();
+
+			if (0 == systemGlobalState.states.rdaIsMute)
+			{
+				APP_CheckRadioOperation(message);
+			}
+			else
+			{
+				APP_CheckTime(message, &rtc);
+			}
+		}
+		break;
+		case 10 :
+		{
+			LEDC_StopStandingText();
+			APP_CheckWIFI();
+		}
+		break;
+		case 11 :
+		{
+			uint8_t ee_err = APP_CheckEEPROM();
+			uint8_t rda_err = APP_CheckRadio();
+			LEDC_StopStandingText();
+			if (ee_err && !rda_err) sprintf(message, "ROM ERR");
+			if (!ee_err && rda_err) sprintf(message, "RDA ERR");
+			if (ee_err && rda_err) sprintf(message, "ROM RDA ERR");
+			if (!ee_err && !rda_err) APP_CheckTime(message, &rtc);
 		}
 		break;
 		default :
 		{
-			/* Show time as a standing string */
+			fsm = 0;
 		}
+
 		}
 
-		prevTick = HAL_GetTick();
+		fsm = (fsm + 1) % 12;
 	}
-	else
-	{
-
-			if (prevTime + 1000 < HAL_GetTick())
-			{
-				LEDC_StopStandingText();
-				LEDC_SetStandingDot(0);
-				prevTime = HAL_GetTick();
-
-				if(systemGlobalState.states.displayTime)
-				{
-					APP_CheckTime(message);
-				}
-				else
-				{
-					APP_CheckTemperature(message);
-				}
-			}
-	}
-
 }
 
 

@@ -155,7 +155,7 @@ int main(void)
       //				RDA is functional (RSSI > 0)
       // If RDA is functional inform about freq and volm
       // And rest of the time show temperature and time
-      APP_ModuleCheckStates(30*1000);
+      APP_ModuleCheckStates();
 
   }
   /* USER CODE END 3 */
