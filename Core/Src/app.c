@@ -33,6 +33,155 @@ void APP_ShortcutUSB(void)
 	  __HAL_RCC_GPIOA_CLK_DISABLE();
 }
 
+uint8_t APP_CheckEEPROM(void)
+{
+	uint8_t anyFault = 0;
+	if(!APP_EEPROM_CheckIfOk())
+	{
+		  // ensure the string is displayed
+	    //while(LEDC_GetRollingStatus()) { }
+		LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
+		anyFault = 1;
+	}
+	else
+	{
+		anyFault = 0;
+	}
+	return anyFault;
+}
+
+uint8_t APP_CheckRadio(void)
+{
+	uint8_t anyFault = 0;
+	// Receiver signal strength is always > 0
+	if(0 == RDA5807mGetRSSI())
+	{
+		// inform, save the state and try to re-init
+		systemGlobalState.states.rdaFunctional = 0;
+		  // ensure the string is displayed
+	    //while(LEDC_GetRollingStatus()) { }
+		LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
+		anyFault = 1;
+		RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
+	}
+	else
+	{
+		anyFault = 0;
+		systemGlobalState.states.rdaFunctional = 1;
+	}
+	return anyFault;
+}
+
+uint8_t APP_CheckWIFI(void)
+{
+	uint8_t anyFault = 0;
+	// 1) Are we connected ? (AT+CWJAP?)
+	// 2) Are we providing a server ? (AT+CIPMUX?)
+
+
+	ESP_SendCommand("AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"));
+	// either +CWJAP:"SSID","MAC address" ..  OK
+	// or No AP OK
+	if(NULL == ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
+	{
+		systemGlobalState.states.espConnected = 0;
+		  // ensure the string is displayed
+	    //while(LEDC_GetRollingStatus()) { }
+		LEDC_SetNewRollingString("offline", strlen("offline"));
+		// Try to re-init
+		APP_ESP_InitConnect();
+	}
+
+	ESP_SendCommand("AT+CIPMUX?\r\n", strlen("AT+CIPMUX?\r\n"));
+
+	if(NULL == ESP_CheckResponse("+CIPMUX:1", strlen("+CIPMUX:1"), ESP_TIMEOUT_300ms))
+	{
+		systemGlobalState.states.espConnected = 0;
+		  // ensure the string is displayed
+	    //while(LEDC_GetRollingStatus()) { }
+		LEDC_SetNewRollingString("offline", strlen("offline"));
+
+		// Try to re-init
+		APP_ESP_InitConnect();
+	}
+	else
+	{
+		// Shows server's IP address where can client connect
+		// +CIFSR:STAIP,"192.yyy.0.108"
+		// +CIFSR:STAMAC,"xx:3a:e8:0b:76:53"
+		ESP_SendCommand("AT+CIFSR\r\n", strlen("AT+CIFSR\r\n"));
+		uint8_t* ipStr = ESP_CheckResponse("+CIFSR:STAIP,", strlen("+CIFSR:STAIP,"), ESP_TIMEOUT_300ms) + strlen("+CIFSR:STAIP,");
+
+		if(ipStr)
+		{
+			uint8_t idx = 0;
+			uint8_t quotationMarkCnt = 0;
+			for(idx = 0; idx < 17; idx++)
+			{
+
+				if('"' == ipStr[idx])
+				{
+					quotationMarkCnt++;
+				}
+				if(quotationMarkCnt == 2)
+				{
+					break;
+				}
+			}
+			if(2 == quotationMarkCnt)
+			{
+
+				char ipAdr[15] = {0};
+				memcpy(ipAdr, ipStr + 1, idx -1);
+				// ensure the string is displayed
+				//while(LEDC_GetRollingStatus()) { }
+				LEDC_SetNewRollingString(ipAdr, idx -1);
+			}
+		}
+	}
+	return anyFault;
+}
+
+void APP_CheckRadioOperation(char* message)
+{
+	if(systemGlobalState.states.rdaFunctional && !systemGlobalState.states.rdaIsMute)
+	{
+		sprintf(message, "frequency %d.%d khz volume %d",
+				systemGlobalState.radioFreq / 100,
+				systemGlobalState.radioFreq % 100,
+				systemGlobalState.radioVolm);
+		  // ensure the string is displayed
+		LEDC_SetNewRollingString(message, strlen(message));
+	}
+}
+
+void APP_CheckTemperature(char* message)
+{
+    int32_t temp, press;
+	bmp280_get_temp_press(&temp, &press);
+
+	if (temp > 0)
+	{
+		sprintf(message, "%02ld*C", temp/100);
+	}
+	else
+	{
+		temp = (temp < -9) ? -9 : temp;
+		sprintf(message, "%ld*C", temp/100);
+	}
+
+	LEDC_SetNewRollingString(message, strlen(message));
+}
+
+void APP_CheckTime(char *message)
+{
+	RTC_TimeTypeDef rtc;
+
+	HAL_RTC_GetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
+	sprintf(message, "%02d%02d", rtc.Hours, rtc.Minutes);
+	LEDC_SetStandingDot(2);
+	LEDC_SetNewStandingText(message);
+}
 void APP_ModuleCheckStates(uint32_t timeout)
 {
 	static uint32_t prevTick;
@@ -41,7 +190,6 @@ void APP_ModuleCheckStates(uint32_t timeout)
 
 	uint8_t anyFault = 0;
 	char message[32] = {0};
-    int32_t temp, press;
 
 	if(prevTick + timeout < HAL_GetTick() && !LEDC_GetRollingStatus())
 	{
@@ -52,147 +200,31 @@ void APP_ModuleCheckStates(uint32_t timeout)
 		{
 		case CHECK_EEPROM:
 		{
-			if(!APP_EEPROM_CheckIfOk())
-			{
-				  // ensure the string is displayed
-			    //while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
-				anyFault = 1;
-			}
-			else
-			{
-				anyFault = 0;
-			}
-
+			anyFault = APP_CheckEEPROM();
 			informationFSM = CHECK_RADIO;
 		}
 		if (anyFault) break;
 		case CHECK_RADIO:
 		{
-			// Receiver signal strength is always > 0
-			if(0 == RDA5807mGetRSSI())
-			{
-				// inform, save the state and try to re-init
-				systemGlobalState.states.rdaFunctional = 0;
-				  // ensure the string is displayed
-			    //while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
-				anyFault = 1;
-				RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
-			}
-			else
-			{
-				anyFault = 0;
-				systemGlobalState.states.rdaFunctional = 1;
-			}
-
+			anyFault = APP_CheckRadio();
 			informationFSM = CHECK_WIFI;
-
 		}
 		if (anyFault) break;
 		case CHECK_WIFI:
 		{
-			// 1) Are we connected ? (AT+CWJAP?)
-			// 2) Are we providing a server ? (AT+CIPMUX?)
-
-
-			ESP_SendCommand("AT+CWJAP?\r\n", strlen("AT+CWJAP?\r\n"));
-			// either +CWJAP:"SSID","MAC address" ..  OK
-			// or No AP OK
-			if(NULL == ESP_CheckResponse("+CWJAP", strlen("+CWJAP"), ESP_TIMEOUT_300ms))
-			{
-				systemGlobalState.states.espConnected = 0;
-				  // ensure the string is displayed
-			    //while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("offline", strlen("offline"));
-				// Try to re-init
-				APP_ESP_InitConnect();
-			}
-
-			ESP_SendCommand("AT+CIPMUX?\r\n", strlen("AT+CIPMUX?\r\n"));
-
-			if(NULL == ESP_CheckResponse("+CIPMUX:1", strlen("+CIPMUX:1"), ESP_TIMEOUT_300ms))
-			{
-				systemGlobalState.states.espConnected = 0;
-				  // ensure the string is displayed
-			    //while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString("offline", strlen("offline"));
-
-				// Try to re-init
-				APP_ESP_InitConnect();
-			}
-			else
-			{
-				// Shows server's IP address where can client connect
-				// +CIFSR:STAIP,"192.yyy.0.108"
-				// +CIFSR:STAMAC,"xx:3a:e8:0b:76:53"
-				ESP_SendCommand("AT+CIFSR\r\n", strlen("AT+CIFSR\r\n"));
-				uint8_t* ipStr = ESP_CheckResponse("+CIFSR:STAIP,", strlen("+CIFSR:STAIP,"), ESP_TIMEOUT_300ms) + strlen("+CIFSR:STAIP,");
-
-				if(ipStr)
-				{
-					uint8_t idx = 0;
-					uint8_t quotationMarkCnt = 0;
-					for(idx = 0; idx < 17; idx++)
-					{
-
-						if('"' == ipStr[idx])
-						{
-							quotationMarkCnt++;
-						}
-						if(quotationMarkCnt == 2)
-						{
-							break;
-						}
-					}
-					if(2 == quotationMarkCnt)
-					{
-						char ipAdr[15] = {0};
-						memcpy(ipAdr, ipStr + 1, idx -1);
-						// ensure the string is displayed
-						//while(LEDC_GetRollingStatus()) { }
-						LEDC_SetNewRollingString(ipAdr, idx -1);
-					}
-				}
-			}
+			APP_CheckWIFI();
 			informationFSM = CHECK_TEMPERATURE;
 		}
 		break;
 		case CHECK_TEMPERATURE:
 		{
-
-		    //while(LEDC_GetRollingStatus()) { }
-
-			bmp280_get_temp_press(&temp, &press);
-
-			if (temp > 0)
-			{
-				sprintf(message, "%02ld*C", temp/100);
-			}
-			else
-			{
-				temp = (temp < -9) ? -9 : temp;
-				sprintf(message, "%ld*C", temp/100);
-			}
-
-			LEDC_SetNewRollingString(message, strlen(message));
-
+			APP_CheckTemperature(message);
 			informationFSM = CHECK_RADIO_OP;
 		}
 		break;
 		case CHECK_RADIO_OP:
 		{
-			if(systemGlobalState.states.rdaFunctional && !systemGlobalState.states.rdaIsMute)
-			{
-				sprintf(message, "frequency %d.%d khz volume %d",
-						systemGlobalState.radioFreq / 100,
-						systemGlobalState.radioFreq % 100,
-						systemGlobalState.radioVolm);
-				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
-				LEDC_SetNewRollingString(message, strlen(message));
-			}
-
+			APP_CheckRadioOperation(message);
 			informationFSM = CHECK_EEPROM;
 		}
 		break;
@@ -215,30 +247,11 @@ void APP_ModuleCheckStates(uint32_t timeout)
 
 				if(systemGlobalState.states.displayTime)
 				{
-					RTC_TimeTypeDef rtc;
-
-					while(LEDC_GetRollingStatus()) { }
-					HAL_RTC_GetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
-					sprintf(message, "%02d%02d", rtc.Hours, rtc.Minutes);
-					LEDC_SetStandingDot(2);
-					LEDC_SetNewStandingText(message);
+					APP_CheckTime(message);
 				}
 				else
 				{
-					bmp280_get_temp_press(&temp, &press);
-
-					if (temp > 0)
-					{
-						sprintf(message, "%02ld*C", temp/100);
-					}
-					else
-					{
-						temp = (temp < -9) ? -9 : temp;
-						sprintf(message, "%ld*C", temp/100);
-					}
-
-					while(LEDC_GetRollingStatus()) { }
-					LEDC_SetNewStandingText(message);
+					APP_CheckTemperature(message);
 				}
 			}
 	}
