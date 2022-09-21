@@ -14,7 +14,6 @@
 
 static char httpReqBuff[MAX_HTTP_REQ_SIZE + 1] = {0};
 
-
 uint32_t ESP_HTTPinit (void)
 {
 
@@ -191,7 +190,13 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 		}
 		if(ESP_ExtractValue("time=", pHTTPReq, hhhtReqLng, &value) && ESP_ExtractString("ST_TIME", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
-			ESP_SetTime(((value / 100) << 24) + ((value % 100) << 8));
+			RTC_TimeTypeDef rtc;
+
+			rtc.Hours = value / 100;
+			rtc.Minutes = value % 100;
+			rtc.Seconds = 0;
+
+			HAL_RTC_SetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
 		}
 		if(ESP_ExtractString("ST_TISH", pHTTPReq, hhhtReqLng, &DummyLng))
 		{

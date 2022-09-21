@@ -29,5 +29,5 @@ uint32_t LEDC_SetNewInfiniteRollingString(const char * str);
 uint32_t LEDC_StopInfiniteRollingString(void);
 /*To be called periodically using timer, isr ... whatever (cca 200x second)*/
 uint32_t LEDC_PeriodicDisplayService(void);
-
+void LEDC_SetStandingDot(uint8_t pos);
 #endif /* LEDC_IF_H_ */

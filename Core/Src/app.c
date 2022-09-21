@@ -38,6 +38,7 @@ void APP_ModuleCheckStates(uint32_t timeout)
 	static uint32_t prevTick;
 	static uint32_t prevTime;
 	static uint8_t informationFSM = 0;
+
 	uint8_t anyFault = 0;
 	char message[32] = {0};
     int32_t temp, press;
@@ -54,7 +55,7 @@ void APP_ModuleCheckStates(uint32_t timeout)
 			if(!APP_EEPROM_CheckIfOk())
 			{
 				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
+			    //while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("EEPROM fault", strlen("EEPROM fault"));
 				anyFault = 1;
 			}
@@ -74,7 +75,7 @@ void APP_ModuleCheckStates(uint32_t timeout)
 				// inform, save the state and try to re-init
 				systemGlobalState.states.rdaFunctional = 0;
 				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
+			    //while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("radio fault", strlen("radio fault"));
 				anyFault = 1;
 				RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
@@ -102,16 +103,10 @@ void APP_ModuleCheckStates(uint32_t timeout)
 			{
 				systemGlobalState.states.espConnected = 0;
 				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
+			    //while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("offline", strlen("offline"));
-
-				anyFault = 1;
 				// Try to re-init
 				APP_ESP_InitConnect();
-			}
-			else
-			{
-				anyFault = 0;
 			}
 
 			ESP_SendCommand("AT+CIPMUX?\r\n", strlen("AT+CIPMUX?\r\n"));
@@ -120,10 +115,9 @@ void APP_ModuleCheckStates(uint32_t timeout)
 			{
 				systemGlobalState.states.espConnected = 0;
 				  // ensure the string is displayed
-			    while(LEDC_GetRollingStatus()) { }
+			    //while(LEDC_GetRollingStatus()) { }
 				LEDC_SetNewRollingString("offline", strlen("offline"));
 
-				anyFault = 1;
 				// Try to re-init
 				APP_ESP_InitConnect();
 			}
@@ -155,19 +149,20 @@ void APP_ModuleCheckStates(uint32_t timeout)
 					{
 						char ipAdr[15] = {0};
 						memcpy(ipAdr, ipStr + 1, idx -1);
-						  // ensure the string is displayed
-					    while(LEDC_GetRollingStatus()) { }
+						// ensure the string is displayed
+						//while(LEDC_GetRollingStatus()) { }
 						LEDC_SetNewRollingString(ipAdr, idx -1);
 					}
 				}
-
-				anyFault = 0;
 			}
 			informationFSM = CHECK_TEMPERATURE;
 		}
-		if (anyFault) break;
+		break;
 		case CHECK_TEMPERATURE:
 		{
+
+		    //while(LEDC_GetRollingStatus()) { }
+
 			bmp280_get_temp_press(&temp, &press);
 
 			if (temp > 0)
@@ -180,8 +175,7 @@ void APP_ModuleCheckStates(uint32_t timeout)
 				sprintf(message, "%ld*C", temp/100);
 			}
 
-			while(LEDC_GetRollingStatus()) { }
-			LEDC_SetNewStandingText(message);
+			LEDC_SetNewRollingString(message, strlen(message));
 
 			informationFSM = CHECK_RADIO_OP;
 		}
@@ -216,12 +210,17 @@ void APP_ModuleCheckStates(uint32_t timeout)
 			if (prevTime + 1000 < HAL_GetTick())
 			{
 				LEDC_StopStandingText();
+				LEDC_SetStandingDot(0);
 				prevTime = HAL_GetTick();
 
 				if(systemGlobalState.states.displayTime)
 				{
+					RTC_TimeTypeDef rtc;
+
 					while(LEDC_GetRollingStatus()) { }
-					sprintf(message, "%04ld", (prevTime/1000) % 10000);
+					HAL_RTC_GetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
+					sprintf(message, "%02d%02d", rtc.Hours, rtc.Minutes);
+					LEDC_SetStandingDot(2);
 					LEDC_SetNewStandingText(message);
 				}
 				else
@@ -304,7 +303,6 @@ void APP_LEDC_DisplayInit(void)
 
 void APP_RTC_Init(void)
 {
-	/* Todo */
 }
 
 void APP_RTC_GetHHMM(uint8_t *hh, uint8_t *mm)

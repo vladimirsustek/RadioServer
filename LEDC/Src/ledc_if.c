@@ -43,6 +43,8 @@ static uint8_t counter360ms = 0;
 
 static uint8_t internalStandingStringBUff[NUMBER_OF_ANODES];
 
+static uint8_t standingDotPosition = 0;
+
 TIM_HandleTypeDef htim2;
 
 /* Simple conversion between ASCII and 7-seg
@@ -153,6 +155,19 @@ uint32_t LEDC_GetRollingStatus(void)
 {
 	return rollingStringBusyFlag;
 }
+
+void LEDC_SetStandingDot(uint8_t pos)
+{
+	if (pos >= 1 && pos <= 4)
+	{
+		standingDotPosition = pos;
+	}
+	else
+	{
+		standingDotPosition = 0;
+	}
+}
+
 
 /* Shows only (first str's) 4-digits and does not roll*/
 uint32_t LEDC_SetNewStandingText(const char * str)
@@ -288,6 +303,7 @@ uint32_t LEDC_PeriodicDisplayService(void)
 {
 	/* Routine takes  6-12us when core clock 56MHz*/
 	uint32_t stop = 0;
+	uint8_t digit = 0;
 
 	if (rollingStringBusyFlag)
 	{
@@ -338,7 +354,14 @@ uint32_t LEDC_PeriodicDisplayService(void)
 
 	    full7Segment = (full7Segment + 1) & (NUMBER_OF_ANODES -1);
 
-	    LEDC_WRITE_7SEG(ASCII27SEG(internalStandingStringBUff[full7Segment]));
+	    digit = ASCII27SEG(internalStandingStringBUff[full7Segment]);
+
+	    if(standingDotPosition && (full7Segment == standingDotPosition - 1))
+	    {
+	    	digit |= 0x80;
+	    }
+
+	    LEDC_WRITE_7SEG(digit);
 		LEDC_WRITE_ANODES(multiplexedAnode);
 	}
 	else
