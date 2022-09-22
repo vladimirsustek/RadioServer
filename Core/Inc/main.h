@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define GREEN_LED_Pin GPIO_PIN_13
+#define GREEN_LED_GPIO_Port GPIOC
 #define RDA_SWITCH_PWR_Pin GPIO_PIN_0
 #define RDA_SWITCH_PWR_GPIO_Port GPIOA
 #define ESP_RST_Pin GPIO_PIN_1
@@ -99,6 +101,7 @@ void Error_Handler(void);
 
 #define GPIO_ON_OFF(x) ((x) != 1 ? GPIO_PIN_SET : GPIO_PIN_RESET)
 
+#define PLATFORM_DELAY_MS(MS)	(HAL_Delay(MS))
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

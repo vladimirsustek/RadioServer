@@ -33,13 +33,14 @@ extern "C" {
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN Private defines */
-
+typedef enum {NO_BLINK, ONCE_BLINK, THREE_BLINKS, PERMANENT_BLINK} BluePillGreenLed_t;
 /* USER CODE END Private defines */
 
 void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void BluePill_GreenLedService(void);
+void BluePill_SetBlinkState(BluePillGreenLed_t st);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -194,7 +194,7 @@ uint32_t EEPROM_WriteData(uint32_t address, uint8_t* pData, uint16_t size)
 				cycleSize
 				);
 
-		HAL_Delay(10);
+		PLATFORM_DELAY_MS(10);
 		result += EEPROM_ReadStatusRegister(&status);
 
 		if(0 != status)
@@ -304,7 +304,7 @@ uint16_t Cmd25AA1024RdBytes(const uint8_t* const cmd, const uint16_t lng)
 		subResult = EEPROM_ReadData(addr, auxBuff, subLng);
     	readLng -= subLng;
     	printf("%s\r\n", (char*)auxBuff);
-    	HAL_Delay(100);
+    	PLATFORM_DELAY_MS(100);
 	}
 
 	if(0 != subResult)

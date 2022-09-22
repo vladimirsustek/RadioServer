@@ -83,6 +83,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
 	uint8_t* rxStrBuff = NULL;
 	char *pHTTPReq = NULL;
+	char stateMessage[APP_MESSAGE_LNG] = {0};
     uint32_t rxStrlng;
     uint32_t httpReqLng = 0;
 
@@ -115,14 +116,14 @@ int main(void)
   MX_TIM3_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-
+  BluePill_SetBlinkState(PERMANENT_BLINK);
   APP_LEDC_DisplayInit();
   APP_RDA5807M_RadioInit();
   APP_BMP280_SensorInit();
   APP_EEPROM_CheckIfOk();
   APP_ESP_InitConnect();
   APP_RTC_Init();
-
+  BluePill_SetBlinkState(NO_BLINK);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -140,6 +141,7 @@ int main(void)
       {
           /* If so and is terminated by <LF>,
              process it as command*/
+    	  BluePill_SetBlinkState(THREE_BLINKS);
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
@@ -147,15 +149,12 @@ int main(void)
       if(ESP_RET_OK == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
       {
     	  // Process the request
+    	  BluePill_SetBlinkState(THREE_BLINKS);
           ESP_ProcessHTTP(pHTTPReq, httpReqLng);
       }
 
-      // 1x per timeout (in milliseconds) check whether:
-      // 				ESP is connected to WIFI
-      //				RDA is functional (RSSI > 0)
-      // If RDA is functional inform about freq and volm
-      // And rest of the time show temperature and time
-      APP_ModuleCheckStates();
+      // Periodic time/temp display + fault detection
+      APP_ModuleCheckStates(stateMessage);
 
   }
   /* USER CODE END 3 */

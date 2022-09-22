@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "stm32f1xx_hal.h"
+#include "main.h"
 #include "cmd_defs.h"
 /*********** RDA5807m Hardware - register defines *************/
 /* Fixed address of the RDA5807m chip*/

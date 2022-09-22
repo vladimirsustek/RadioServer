@@ -12,15 +12,11 @@
 #include "esp8266_http_server.h"
 #include "bmp280.h"
 
-#define CHECK_EEPROM		(uint8_t)(0)
-#define CHECK_RADIO			(uint8_t)(1)
-#define CHECK_WIFI			(uint8_t)(2)
 
-#define CHECK_TEMPERATURE 	(uint8_t)(3)
-#define CHECK_RADIO_OP		(uint8_t)(4)
+#define APP_MESSAGE_LNG		(uint32_t)(32)
 
 void APP_ShortcutUSB(void);
-void APP_ModuleCheckStates(void);
+void APP_ModuleCheckStates(char *message);
 uint8_t APP_EEPROM_CheckIfOk(void);
 void APP_ESP_InitConnect(void);
 void APP_RDA5807M_RADIO_Init(void);

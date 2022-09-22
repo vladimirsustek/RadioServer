@@ -23,6 +23,7 @@
 /* USER CODE BEGIN 0 */
 #include "ledc_if.h"
 #include "esp8266_port.h"
+#include "gpio.h"
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim2;
@@ -188,12 +189,9 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim->Instance == TIM2)
 	{
+		// 200Hz (5ms)
 		LEDC_PeriodicDisplayService();
-	}
-	if (htim->Instance == TIM3)
-	{
-		ESP_IncrementTick();
-		ESP_IncrementTime();
+		BluePill_GreenLedService();
 	}
 }
 /* USER CODE END 1 */

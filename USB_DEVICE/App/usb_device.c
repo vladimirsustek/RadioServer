@@ -86,7 +86,7 @@ void MX_USB_DEVICE_Init(void)
   }
 
   /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */
-  HAL_Delay(2000);
+  PLATFORM_DELAY_MS(2000);
   /* USER CODE END USB_DEVICE_Init_PostTreatment */
 }
 

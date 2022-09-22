@@ -22,7 +22,9 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN 0 */
-
+static BluePillGreenLed_t blinkState = NO_BLINK;
+static uint8_t div200to20Hz = 0;
+static uint8_t intState = 0;
 /* USER CODE END 0 */
 
 /*----------------------------------------------------------------------------*/
@@ -53,6 +55,9 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, RDA_SWITCH_PWR_Pin|SPI1_NCS_Pin|LEDC_A2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
@@ -65,10 +70,12 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LEDC_G_Pin|LEDC_A_Pin|LEDC_F_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = GREEN_LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GREEN_LED_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PAPin PAPin PAPin PAPin
                            PAPin */
@@ -111,5 +118,75 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
+
+// to be called 1x per 50ms
+void BluePill_GreenLedService(void)
+{
+	if (0 == div200to20Hz)
+	{
+		div200to20Hz = (div200to20Hz + 1 % 20);
+
+		switch(blinkState)
+		{
+		case ONCE_BLINK :
+		{
+			if (0 == intState)
+			{
+				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
+			}
+			else
+			{
+				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
+			}
+			intState = (intState + 1) % 10;
+			if (0 == intState) blinkState = NO_BLINK;
+		}
+		break;
+		case THREE_BLINKS :
+		{
+			switch(intState)
+			{
+			case 0:
+			case 2:
+			case 4:
+			{
+				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
+			}
+			break;
+			default :
+			{
+				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
+			}
+			}
+			intState = (intState + 1) % 10;
+			if (0 == intState) blinkState = NO_BLINK;
+		}
+		break;
+		case PERMANENT_BLINK :
+		{
+			HAL_GPIO_TogglePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin);
+			intState = 0;
+		}
+		break;
+		default :
+		{
+			blinkState = NO_BLINK;
+		}
+		break;
+		}
+	}
+	else
+	{
+		div200to20Hz = (div200to20Hz + 1) % 20;
+	}
+
+}
+
+void BluePill_SetBlinkState(BluePillGreenLed_t st)
+{
+	blinkState = st;
+	div200to20Hz = 0;
+	intState = 0;
+}
 
 /* USER CODE END 2 */

@@ -7,15 +7,6 @@
 /* byte endianity solving macro for 16b variable*/
 #define swapbytes(byte)     ((((byte) & 0x00FF) << 8) | (((byte) & 0xFF00) >> 8))
 
-
-
-#define RDA_SWITCH_GND_Pin GPIO_PIN_13
-#define RDA_SWITCH_GND_GPIO_Port GPIOC
-
-#define RDA_SWITCH_PWR_Pin GPIO_PIN_14
-#define RDA_SWITCH_PWR_GPIO_Port GPIOC
-
-
 I2C_HandleTypeDef hi2c1;
 
 static void twi_readFromSlave(uint8_t DevAddress, uint8_t *pData, uint16_t Size)
@@ -338,9 +329,8 @@ void RDA5807mClearRDSFIFO(void) {
 
 void RDA5807mPowerCycle(void)
 {
-	HAL_GPIO_WritePin(RDA_SWITCH_GND_GPIO_Port, RDA_SWITCH_GND_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(RDA_SWITCH_PWR_GPIO_Port, RDA_SWITCH_PWR_Pin, GPIO_PIN_RESET);
-	HAL_Delay(1000);
+	PLATFORM_DELAY_MS(1000);
 	HAL_GPIO_WritePin(RDA_SWITCH_PWR_GPIO_Port, RDA_SWITCH_PWR_Pin, GPIO_PIN_SET);
-	HAL_Delay(500);
+	PLATFORM_DELAY_MS(500);
 }

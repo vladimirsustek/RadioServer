@@ -182,7 +182,6 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 	{
 		uint32_t DummyLng = 0;
 
-
 		if(ESP_ExtractString("DO_INIT", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
 			sprintf(auxStr, "DO_INIT\r\n");

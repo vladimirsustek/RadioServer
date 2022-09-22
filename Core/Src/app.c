@@ -7,8 +7,9 @@
 
 
 #include "app.h"
+#include "gpio.h"
 
-static uint8_t fsm = 0;
+static uint8_t displayFSMstate = 0;
 
 void APP_ShortcutUSB(void)
 {
@@ -28,7 +29,7 @@ void APP_ShortcutUSB(void)
 
 	  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-	  HAL_Delay(2000);
+	  PLATFORM_DELAY_MS(2000);
 
 	  HAL_GPIO_DeInit(GPIOA, GPIO_PIN_12|GPIO_PIN_11);
 
@@ -102,7 +103,9 @@ uint8_t APP_CheckWIFI(void)
 		LEDC_SetNewRollingString("offline", strlen("offline"));
 
 		// Try to re-init
+		BluePill_SetBlinkState(PERMANENT_BLINK);
 		APP_ESP_InitConnect();
+		BluePill_SetBlinkState(NO_BLINK);
 	}
 	else
 	{
@@ -179,21 +182,47 @@ void APP_CheckTime(char *message, RTC_TimeTypeDef* pRtc)
 	LEDC_SetStandingDot(2);
 	LEDC_SetNewStandingText(message);
 }
-void APP_ModuleCheckStates(void)
+void APP_ModuleCheckStates(char *message)
 {
 	static uint8_t prevSeconds = 0;
-
-	char message[32] = {0};
+	static uint8_t timeElapsed = 0;
 
 	RTC_TimeTypeDef rtc;
 
 	HAL_RTC_GetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
 
-	if((rtc.Seconds != prevSeconds) && (9 == (rtc.Seconds % 10)) && !LEDC_GetRollingStatus())
-	{
-		prevSeconds = rtc.Seconds;
+	// FSM is triggered each 9th second (9, 19, 29, 39, 49, 59th second)
+	// and also no rolling string may be in progress
+	// FSM has 12th periodic states, each lasts 10 seconds
+	// Note that case 6, 10 and especially 11 due to rolling text may
+	// last a bit longer
 
-		switch(fsm)
+	// 00 APP_CheckTime (Display time HH.MM)
+	// 01 APP_CheckTemperature (Display temperature XX°C)
+	// 02 APP_CheckTime (Display time HH.MM)
+	// 03 APP_CheckTemperature (Display temperature XX°C)
+	// 04 APP_CheckTime (Display time HH.MM)
+	// 05 APP_CheckTemperature (Display temperature XX°C)
+	// 06 APP_CheckRadioOperation (Display "Frequency XXX.YY volume ZZ")
+	//    when radio operates otherwise APP_CheckTime (Display time HH.MM)
+	// 07 APP_CheckTemperature (Display temperature XX°C)
+	// 08 APP_CheckTime (Display time HH.MM)
+	// 09 APP_CheckTemperature (Display temperature XX°C)
+	// 10 APP_CheckWIFI (Displays IP e.g. 123.123.123.123 or "offline")
+	// 11 APP_CheckEEPROM and APP_CheckRadio (RDA, ROM ERR)
+	//    otherwise APP_CheckTime (Display time HH.MM)
+
+	// check whether 10 seconds has elapsed and the "has elapsed" flag was not used
+	timeElapsed = (!timeElapsed && (rtc.Seconds != prevSeconds) && (9 == (rtc.Seconds % 10))) ? 1 : 0;
+
+	// check whether flag is set and also LEDC is available (could happen time elapsed but LEDC was busy)
+	if(timeElapsed && !LEDC_GetRollingStatus())
+	{
+		timeElapsed = 0;
+		prevSeconds = rtc.Seconds;
+		memset(message, '\0', APP_MESSAGE_LNG);
+
+		switch(displayFSMstate)
 		{
 		case 0:
 		case 2:
@@ -245,12 +274,12 @@ void APP_ModuleCheckStates(void)
 		break;
 		default :
 		{
-			fsm = 0;
+			displayFSMstate = 0;
 		}
 
 		}
 
-		fsm = (fsm + 1) % 12;
+		displayFSMstate = (displayFSMstate + 1) % 12;
 	}
 }
 
@@ -309,15 +338,15 @@ void APP_LEDC_DisplayInit(void)
 	LEDC_InitHW();
 }
 
-
 void APP_RTC_Init(void)
 {
+	// By the STM32F103 nature RTC does not need to be started
 }
 
-void APP_RTC_GetHHMM(uint8_t *hh, uint8_t *mm)
+
+void BLUEPILL_GreenLedService(void)
 {
-	if(hh) *hh = 12;
-	if(mm) *mm = 34;
+
 }
 /*printf <=> uart redirection */
 int _write(int file, char *ptr, int len)

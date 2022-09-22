@@ -60,6 +60,7 @@ uint16_t CmdESPConsoleWrStr(const uint8_t* const str, const uint16_t lng)
 	return subResult;
 }
 
+// WARNING FUNCTION EXPECTS <CR><LF> termination
 uint32_t ESP_CheckRX(uint32_t timeOut,
 				     uint32_t blockingTimeOut,
 					 U32_pFn_pC_pC_U32_pC_pU32 processFn,
