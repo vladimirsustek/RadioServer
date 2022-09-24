@@ -197,12 +197,6 @@ char* ESP_ProcessHTTP(char *pHTTPReq, uint32_t hhhtReqLng)
 
 			HAL_RTC_SetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
 		}
-		if(ESP_ExtractString("ST_TISH", pHTTPReq, hhhtReqLng, &DummyLng))
-		{
-			EEPROM_GetSystemState();
-			systemGlobalState.states.displayTime ^= 1;
-			EEPROM_SetSystemState();
-		}
 		if(ESP_ExtractString("DO_RSET", pHTTPReq, hhhtReqLng, &DummyLng))
 		{
 			sprintf(auxStr, "DO_RSET\r\n");

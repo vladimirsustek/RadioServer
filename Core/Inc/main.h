@@ -63,8 +63,8 @@ void Error_Handler(void);
 #define RDA_SWITCH_PWR_GPIO_Port GPIOA
 #define ESP_RST_Pin GPIO_PIN_1
 #define ESP_RST_GPIO_Port GPIOA
-#define NCODER_IN_Pin GPIO_PIN_2
-#define NCODER_IN_GPIO_Port GPIOA
+#define NCODER_DT_Pin GPIO_PIN_2
+#define NCODER_DT_GPIO_Port GPIOA
 #define NCODER_BTN_Pin GPIO_PIN_3
 #define NCODER_BTN_GPIO_Port GPIOA
 #define SPI1_NCS_Pin GPIO_PIN_4
@@ -102,6 +102,8 @@ void Error_Handler(void);
 #define GPIO_ON_OFF(x) ((x) != 1 ? GPIO_PIN_SET : GPIO_PIN_RESET)
 
 #define PLATFORM_DELAY_MS(MS)	(HAL_Delay(MS))
+#define PLATFORM_TICK_MS(MS)	(HAL_GetTick(MS))
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

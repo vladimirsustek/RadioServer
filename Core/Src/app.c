@@ -11,6 +11,12 @@
 
 static uint8_t displayFSMstate = 0;
 
+static uint8_t btnSetFlag = 0;
+static uint8_t btn3SecPressFlag = 0;
+static uint8_t ncDirection = 0;
+static uint8_t clkStateprev = 0;
+static uint8_t dtStateprev = 0;
+
 void APP_ShortcutUSB(void)
 {
 	  GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -175,21 +181,70 @@ void APP_CheckTemperature(char* message)
 	LEDC_SetNewStandingText(message);
 }
 
-void APP_CheckTime(char *message, RTC_TimeTypeDef* pRtc)
+void APP_CheckTime(char *message, RTC_TimeTypeDef* pRtc, uint8_t blinkDot)
 {
 	LEDC_SetStandingDot(0);
 	sprintf(message, "%02d%02d", pRtc->Hours, pRtc->Minutes);
-	LEDC_SetStandingDot(2);
+	if (blinkDot)
+	{
+		LEDC_SetStandingDot(2);
+	}
 	LEDC_SetNewStandingText(message);
 }
-void APP_ModuleCheckStates(char *message)
+
+void APP_CheckWifiEnable(char *message, uint8_t wifi, uint8_t blinkDot)
+{
+	LEDC_SetStandingDot(0);
+	sprintf(message, "ESP%d", wifi);
+	if (blinkDot)
+	{
+		LEDC_SetStandingDot(3);
+	}
+	LEDC_SetNewStandingText(message);
+}
+
+void APP_ShowFrequency(char *message, uint16_t freqeuncy, uint8_t blinkDot)
+{
+	LEDC_SetStandingDot(0);
+	sprintf(message, "%03d%01d", freqeuncy/100, freqeuncy%100);
+	if (blinkDot)
+	{
+		LEDC_SetStandingDot(3);
+	}
+	LEDC_SetNewStandingText(message);
+}
+
+void APP_ShowVolume(char *message, uint16_t volume, uint8_t blinkDot)
+{
+	LEDC_SetStandingDot(0);
+	sprintf(message, "VL%02d", volume);
+	if (blinkDot)
+	{
+		LEDC_SetStandingDot(2);
+	}
+	LEDC_SetNewStandingText(message);
+}
+void APP_ShowMute(char *message, uint8_t mute)
+{
+	LEDC_SetStandingDot(0);
+
+	if (mute)
+	{
+		sprintf(message, "MUTE");
+	}
+	else
+	{
+		sprintf(message, "PLAY");
+	}
+	LEDC_SetNewStandingText(message);
+}
+void APP_ModuleCheckStates(char *message, RTC_TimeTypeDef* pRTC)
 {
 	static uint8_t prevSeconds = 0;
 	static uint8_t timeElapsed = 0;
+	const uint8_t pernamentDot = 1;
 
-	RTC_TimeTypeDef rtc;
-
-	HAL_RTC_GetTime(&hrtc, &rtc, RTC_FORMAT_BIN);
+	HAL_RTC_GetTime(&hrtc, pRTC, RTC_FORMAT_BIN);
 
 	// FSM is triggered each 9th second (9, 19, 29, 39, 49, 59th second)
 	// and also no rolling string may be in progress
@@ -213,13 +268,13 @@ void APP_ModuleCheckStates(char *message)
 	//    otherwise APP_CheckTime (Display time HH.MM)
 
 	// check whether 10 seconds has elapsed and the "has elapsed" flag was not used
-	timeElapsed = (!timeElapsed && (rtc.Seconds != prevSeconds) && (9 == (rtc.Seconds % 10))) ? 1 : 0;
+	timeElapsed = (!timeElapsed && (pRTC->Seconds != prevSeconds) && (9 == (pRTC->Seconds % 10))) ? 1 : 0;
 
 	// check whether flag is set and also LEDC is available (could happen time elapsed but LEDC was busy)
 	if(timeElapsed && !LEDC_GetRollingStatus())
 	{
 		timeElapsed = 0;
-		prevSeconds = rtc.Seconds;
+		prevSeconds = pRTC->Seconds;
 		memset(message, '\0', APP_MESSAGE_LNG);
 
 		switch(displayFSMstate)
@@ -229,7 +284,7 @@ void APP_ModuleCheckStates(char *message)
 		case 4:
 		case 8:
 		{
-			APP_CheckTime(message, &rtc);
+			APP_CheckTime(message, pRTC, pernamentDot);
 		}
 		break;
 		case 1:
@@ -251,14 +306,17 @@ void APP_ModuleCheckStates(char *message)
 			}
 			else
 			{
-				APP_CheckTime(message, &rtc);
+				APP_CheckTime(message, pRTC, pernamentDot);
 			}
 		}
 		break;
 		case 10 :
 		{
 			LEDC_StopStandingText();
-			APP_CheckWIFI();
+			if (systemGlobalState.states.wifiEnabled)
+			{
+				APP_CheckWIFI();
+			}
 		}
 		break;
 		case 11 :
@@ -269,7 +327,7 @@ void APP_ModuleCheckStates(char *message)
 			if (ee_err && !rda_err) sprintf(message, "ROM ERR");
 			if (!ee_err && rda_err) sprintf(message, "RDA ERR");
 			if (ee_err && rda_err) sprintf(message, "ROM RDA ERR");
-			if (!ee_err && !rda_err) APP_CheckTime(message, &rtc);
+			if (!ee_err && !rda_err) APP_CheckTime(message, pRTC, pernamentDot);
 		}
 		break;
 		default :
@@ -343,11 +401,411 @@ void APP_RTC_Init(void)
 	// By the STM32F103 nature RTC does not need to be started
 }
 
+uint8_t APP_ReadNCSwitchPulse(void)
+{
+	uint8_t result = 0;
+	if (1 == btnSetFlag && HAL_GPIO_ReadPin(NCODER_BTN_GPIO_Port, NCODER_BTN_Pin))
+	{
+		result = btnSetFlag;
+		btnSetFlag = 0;
+	}
+	return result;
+}
 
-void BLUEPILL_GreenLedService(void)
+// Must be called periodically cca. 10-n*10x per second
+void DBNC_NCSwitch(void)
+{
+	static uint8_t btnCnt = 0;
+	const uint8_t debouncLevel = 10;
+
+	if(!HAL_GPIO_ReadPin(NCODER_BTN_GPIO_Port, NCODER_BTN_Pin))
+	{
+		// Must be calculated
+		if (btnCnt < debouncLevel)
+		{
+			btnCnt++;
+		}
+		else
+		{
+			btnSetFlag = 1;
+		}
+	}
+	else
+	{
+		if(btnCnt)
+		{
+			btnCnt--;
+		}
+		else
+		{
+			btnSetFlag = 0;
+		}
+	}
+}
+
+// Necessary initialization, otherwise DBNC_NCSwitch triggers a direction change
+void DBNC_NCStart(void)
+{
+	clkStateprev = HAL_GPIO_ReadPin(NCODER_CLK_GPIO_Port, NCODER_CLK_Pin);
+	dtStateprev = HAL_GPIO_ReadPin(NCODER_DT_GPIO_Port, NCODER_DT_Pin);
+}
+
+void DBNC_NCDirection(void)
+{
+	static uint8_t clkChangedAtTime = 0;
+	static uint8_t dtChangedAtTime = 0;
+	static uint8_t internTick = 1; // can't be initialized as 0 !
+
+	uint8_t clkStatenow, dtStatenow;
+
+	if((clkStatenow = (uint8_t)HAL_GPIO_ReadPin(NCODER_CLK_GPIO_Port, NCODER_CLK_Pin)) != clkStateprev)
+	{
+		clkStateprev = clkStatenow;
+		clkChangedAtTime = internTick;
+	}
+
+	internTick = (0 == ((internTick + 1) & (256 - 1))) ? 1 : ((internTick + 1) & (256 - 1));
+
+	if((dtStatenow = (uint8_t)HAL_GPIO_ReadPin(NCODER_DT_GPIO_Port, NCODER_DT_Pin)) != dtStateprev)
+	{
+		dtStateprev = dtStatenow;
+		dtChangedAtTime = internTick;
+	}
+
+	if (clkChangedAtTime && dtChangedAtTime)
+	{
+		ncDirection = (clkChangedAtTime > dtChangedAtTime) ? (uint8_t)-1 : 1;
+		clkChangedAtTime = dtChangedAtTime = 0;
+	}
+}
+
+uint8_t APP_ReadNCDirection(void)
+{
+	uint8_t result = 0;
+	if (0 != ncDirection)
+	{
+		result = ncDirection;
+		ncDirection = 0;
+	}
+	return result;
+}
+
+uint8_t APP_UserInput(char *message, RTC_TimeTypeDef *pRTC)
 {
 
+	uint8_t direction = 0;
+	const uint8_t blinkDotPeriod = 100;
+	static uint32_t timeOut = 0;
+	static uint8_t blinkDot = 0;
+	static uint8_t wifi;
+	static UserInput_t userInputFSM = NO_SETTINGS_ONGOING;
+
+	switch(userInputFSM)
+	{
+	case NO_SETTINGS_ONGOING:
+	{
+		if (APP_ReadNCSwitch3SecPress())
+		{
+			userInputFSM = SETTING_TIME_HOURS;
+			APP_ReadNCDirection();
+		}
+		else
+		{
+			if (APP_ReadNCSwitchPulse())
+			{
+				userInputFSM = SETTING_FREQUENCY;
+				APP_ReadNCDirection();
+			}
+		}
+
+	}
+	break;
+	case SETTING_FREQUENCY:
+	{
+		if(APP_ReadNCSwitchPulse())
+		{
+			userInputFSM = SETTING_VOLUME;
+			APP_ReadNCDirection();
+		}
+		else
+		{
+			if (0 != (direction = APP_ReadNCDirection()))
+			{
+				if (1 == direction)
+				{
+					if (systemGlobalState.radioFreq < RDA5807mWW_FREQ_MAX)
+					{
+						systemGlobalState.radioFreq += 10;
+					}
+				}
+				else
+				{
+					if (systemGlobalState.radioFreq > RDA5807mWW_FREQ_MIN)
+					{
+						systemGlobalState.radioFreq -= 10;
+					}
+				}
+				// set volume and save changes to EEPROM
+				RDA5807mSetVolm(systemGlobalState.radioFreq);
+				EEPROM_SetSystemState();
+			}
+			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
+			{
+				APP_ShowFrequency(message, systemGlobalState.radioFreq, blinkDot);
+				blinkDot ^= 0x01;
+				timeOut = PLATFORM_TICK_MS();
+			}
+		}
+	}
+	break;
+	case SETTING_VOLUME:
+	{
+		if(APP_ReadNCSwitchPulse())
+		{
+			userInputFSM = SETTING_MUTE;
+			APP_ReadNCDirection();
+		}
+		else
+		{
+			if (0 != (direction = APP_ReadNCDirection()))
+			{
+				if (1 == direction)
+				{
+					if (systemGlobalState.radioVolm < RDA5807mVOLUME_MAX)
+					{
+						systemGlobalState.radioVolm++;
+					}
+				}
+				else
+				{
+					if (systemGlobalState.radioVolm > RDA5807mVOLUME_MIN)
+					{
+						systemGlobalState.radioVolm--;
+					}
+				}
+				// set volume and save changes to EEPROM
+				RDA5807mSetVolm(systemGlobalState.radioVolm);
+			}
+			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
+			{
+				APP_ShowVolume(message, systemGlobalState.radioVolm, blinkDot);
+				blinkDot ^= 0x80;
+				timeOut = PLATFORM_TICK_MS();
+			}
+		}
+	}
+	break;
+	case SETTING_MUTE :
+	{
+		if(APP_ReadNCSwitchPulse())
+		{
+			userInputFSM = PLATFORM_SETTINGS_SAVE;
+			APP_ReadNCDirection();
+		}
+		else
+		{
+			if (0 != (direction = APP_ReadNCDirection()))
+			{
+				if (1 == direction)
+				{
+					systemGlobalState.states.rdaIsMute = 1;
+				}
+				else
+				{
+					systemGlobalState.states.rdaIsMute = 0;
+				}
+				// set volume and save changes to EEPROM
+				RDA5807mMute(systemGlobalState.states.rdaIsMute);
+			}
+			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
+			{
+				APP_ShowMute(message, systemGlobalState.states.rdaIsMute);
+				blinkDot ^= 0x80;
+				timeOut = PLATFORM_TICK_MS();
+			}
+		}
+	}
+	break;
+	case SETTING_TIME_HOURS:
+	{
+		if(APP_ReadNCSwitchPulse())
+		{
+			static uint8_t doubleClick = 1;
+
+			if (2 == doubleClick)
+			{
+				doubleClick = 1;
+				userInputFSM = SETTING_TIME_MINUTES;
+				APP_ReadNCDirection();
+			}
+			else
+			{
+				doubleClick++;
+			}
+
+		}
+		else
+		{
+			if (0 != (direction = APP_ReadNCDirection()))
+			{
+				if (1 == direction)
+				{
+					if (pRTC->Hours < 23)
+					{
+						pRTC->Hours++;
+					}
+				}
+				else
+				{
+					if (pRTC->Hours > 0)
+					{
+						pRTC->Hours--;
+					}
+				}
+			}
+			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
+			{
+				APP_CheckTime(message, pRTC, blinkDot);
+				blinkDot ^= 0x01;
+				timeOut = PLATFORM_TICK_MS();
+			}
+		}
+	}
+	break;
+	case SETTING_TIME_MINUTES:
+	{
+		if(APP_ReadNCSwitchPulse())
+		{
+			userInputFSM = SETTING_WIFI_ENABLE_DISABLE;
+			wifi = systemGlobalState.states.wifiEnabled;
+			APP_ReadNCDirection();
+		}
+		else
+		{
+			if (0 != (direction = APP_ReadNCDirection()))
+			{
+				if (1 == direction)
+				{
+					if (pRTC->Minutes < 59)
+					{
+						pRTC->Minutes++;
+					}
+				}
+				else
+				{
+					if (pRTC->Minutes > 0)
+					{
+						pRTC->Minutes--;
+					}
+				}
+			}
+			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
+			{
+				APP_CheckTime(message, pRTC, blinkDot);
+				blinkDot ^= 0x01;
+				timeOut = PLATFORM_TICK_MS();
+			}
+		}
+	}
+	break;
+	case SETTING_WIFI_ENABLE_DISABLE:
+	{
+		if(APP_ReadNCSwitchPulse())
+		{
+			userInputFSM = PLATFORM_SETTINGS_SAVE;
+			APP_ReadNCDirection();
+		}
+		else
+		{
+			if (0 != (direction = APP_ReadNCDirection()))
+			{
+				if (1 == direction)
+				{
+					wifi = 1;
+				}
+				else
+				{
+					wifi = 0;
+				}
+			}
+			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
+			{
+				APP_CheckWifiEnable(message, wifi, blinkDot);
+				blinkDot ^= 0x01;
+				timeOut = PLATFORM_TICK_MS();
+			}
+		}
+	}
+	break;
+	case PLATFORM_SETTINGS_SAVE :
+	{
+		uint8_t rebootNeeded = ((systemGlobalState.states.wifiEnabled != wifi) && wifi) ? 1 : 0;
+
+		systemGlobalState.states.wifiEnabled = wifi;
+		EEPROM_SetSystemState();
+
+		if (rebootNeeded)
+		{
+			NVIC_SystemReset();
+		}
+		else
+		{
+			HAL_RTC_SetTime(&hrtc, pRTC, RTC_FORMAT_BIN);
+			userInputFSM = NO_SETTINGS_ONGOING;
+			APP_CheckTime(message, pRTC, 1);
+		}
+	}
+	break;
+	default :
+	{
+		userInputFSM = NO_SETTINGS_ONGOING;
+	}
+	}
+
+	return (uint8_t)userInputFSM;
 }
+
+void DBNC_NCSwitch3SecPress(void)
+{
+	static uint16_t btnCnt = 0;
+	const uint16_t debouncLevel = 600;
+
+	if(!HAL_GPIO_ReadPin(NCODER_BTN_GPIO_Port, NCODER_BTN_Pin))
+	{
+		// Must be calculated
+		if (btnCnt < debouncLevel)
+		{
+			btnCnt++;
+		}
+		else
+		{
+			btn3SecPressFlag = 1;
+		}
+	}
+	else
+	{
+		if(btnCnt)
+		{
+			btnCnt--;
+		}
+		else
+		{
+			btn3SecPressFlag = 0;
+		}
+	}
+}
+
+uint8_t APP_ReadNCSwitch3SecPress(void)
+{
+	uint8_t result = 0;
+	if (1 == btn3SecPressFlag)
+	{
+		result = btn3SecPressFlag;
+		btnSetFlag = 0;
+	}
+	return result;
+}
+
 /*printf <=> uart redirection */
 int _write(int file, char *ptr, int len)
 {

@@ -86,6 +86,7 @@ int main(void)
 	char stateMessage[APP_MESSAGE_LNG] = {0};
     uint32_t rxStrlng;
     uint32_t httpReqLng = 0;
+    RTC_TimeTypeDef rtcStruct = {0};
 
   /* USER CODE END 1 */
 
@@ -113,16 +114,21 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_USART3_UART_Init();
   MX_SPI1_Init();
-  MX_TIM3_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   BluePill_SetBlinkState(PERMANENT_BLINK);
+
   APP_LEDC_DisplayInit();
   APP_RDA5807M_RadioInit();
   APP_BMP280_SensorInit();
   APP_EEPROM_CheckIfOk();
-  APP_ESP_InitConnect();
   APP_RTC_Init();
+
+  if (systemGlobalState.states.wifiEnabled)
+  {
+	  APP_ESP_InitConnect();
+  }
+
   BluePill_SetBlinkState(NO_BLINK);
   /* USER CODE END 2 */
 
@@ -145,16 +151,23 @@ int main(void)
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-      // Function returns ESP_RET_OK when HTTP request received
-      if(ESP_RET_OK == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
-      {
-    	  // Process the request
-    	  BluePill_SetBlinkState(THREE_BLINKS);
-          ESP_ProcessHTTP(pHTTPReq, httpReqLng);
-      }
+	  if (systemGlobalState.states.wifiEnabled)
+	  {
+	      // Function returns ESP_RET_OK when HTTP request received
+	      if(ESP_RET_OK == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))
+	      {
+	    	  // Process the request
+	    	  BluePill_SetBlinkState(THREE_BLINKS);
+	          ESP_ProcessHTTP(pHTTPReq, httpReqLng);
+	      }
+	  }
 
-      // Periodic time/temp display + fault detection
-      APP_ModuleCheckStates(stateMessage);
+      // If triggered display frequency, volume or time HH:MM settings
+      if (NO_SETTINGS_ONGOING == APP_UserInput(stateMessage, &rtcStruct))
+      {
+          // Periodic time/temp display + fault detection
+          APP_ModuleCheckStates(stateMessage, &rtcStruct);
+      }
 
   }
   /* USER CODE END 3 */

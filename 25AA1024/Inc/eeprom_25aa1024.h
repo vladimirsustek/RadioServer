@@ -59,7 +59,7 @@ typedef struct sys_state_flags
 	        rdaIsMute : 1,
 			espConnected : 1,
 			eepromFunctional : 1,
-			displayTime : 1,
+			wifiEnabled : 1,
 	        dummy0x5 : 3;
 }sys_state_flags_t;
 
