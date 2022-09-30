@@ -253,5 +253,5 @@ uint16_t RDA5807mGetErrBlockB(void);
 void RDA5807mClearRDSFIFO(void);
 
 void RDA5807mPowerCycle(void);
-
-
+void RDA5807mPowerOn(void);
+void RDA5807mPowerOff(void);

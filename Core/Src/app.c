@@ -62,7 +62,7 @@ uint8_t APP_CheckRadio(void)
 {
 	uint8_t anyFault = 0;
 	// Receiver signal strength is always > 0
-	if(0 == RDA5807mGetRSSI())
+	if(0 == RDA5807mGetRSSI() && 0 == systemGlobalState.states.rdaIsMute)
 	{
 		// inform, save the state and try to re-init
 		systemGlobalState.states.rdaFunctional = 0;
@@ -230,11 +230,11 @@ void APP_ShowMute(char *message, uint8_t mute)
 
 	if (mute)
 	{
-		sprintf(message, "MUTE");
+		sprintf(message, "RDA1");
 	}
 	else
 	{
-		sprintf(message, "PLAY");
+		sprintf(message, "RDA0");
 	}
 	LEDC_SetNewStandingText(message);
 }
@@ -492,6 +492,8 @@ uint8_t APP_ReadNCDirection(void)
 
 uint8_t APP_UserInput(char *message, RTC_TimeTypeDef *pRTC)
 {
+#warning bypassed here
+	return 0;
 
 	uint8_t direction = 0;
 	const uint8_t blinkDotPeriod = 100;
@@ -609,13 +611,14 @@ uint8_t APP_UserInput(char *message, RTC_TimeTypeDef *pRTC)
 				if (1 == direction)
 				{
 					systemGlobalState.states.rdaIsMute = 1;
+					RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
 				}
 				else
 				{
 					systemGlobalState.states.rdaIsMute = 0;
+					RDA5807mReset();
 				}
 				// set volume and save changes to EEPROM
-				RDA5807mMute(systemGlobalState.states.rdaIsMute);
 			}
 			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
 			{

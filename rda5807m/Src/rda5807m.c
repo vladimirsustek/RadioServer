@@ -38,8 +38,8 @@ static uint16_t RDA5807mGetReg0x0B(void) {
 
     return (uint32_t)RDA5807MReg[1];
 }
-
-void RDA5807mReset(void) {
+#if REAL_RESET
+__weak void RDA5807mReset(void) {
 
     /* For Mute only 1st register needed to be accessed */
 
@@ -50,16 +50,19 @@ void RDA5807mReset(void) {
     RDA5807Register = swapbytes(RDA5807Register);
 
     twi_writeToSlave(RDA5807M_I2C_ADR, (uint8_t*)&RDA5807Register, RDA5807M_REG_SIZE);
-
-
+}
+#endif
+void RDA5807mReset(void)
+{
+	RDA5807mPowerOff();
 }
 
 void RDA5807mInit(uint16_t freq, uint8_t volm)
 {
 
 	/* Power up and wait */
-	RDA5807mReset();
-	RDA5807mPowerCycle();
+	//RDA5807mReset();
+	RDA5807mPowerOn();
 
     freq -= RDA5807mWW_FREQ_MIN;
     freq /= 10;
@@ -333,4 +336,15 @@ void RDA5807mPowerCycle(void)
 	PLATFORM_DELAY_MS(1000);
 	HAL_GPIO_WritePin(RDA_SWITCH_PWR_GPIO_Port, RDA_SWITCH_PWR_Pin, GPIO_PIN_SET);
 	PLATFORM_DELAY_MS(500);
+}
+
+void RDA5807mPowerOn(void)
+{
+	HAL_GPIO_WritePin(RDA_SWITCH_PWR_GPIO_Port, RDA_SWITCH_PWR_Pin, GPIO_PIN_SET);
+	PLATFORM_DELAY_MS(500);
+}
+
+void RDA5807mPowerOff(void)
+{
+	HAL_GPIO_WritePin(RDA_SWITCH_PWR_GPIO_Port, RDA_SWITCH_PWR_Pin, GPIO_PIN_RESET);
 }
