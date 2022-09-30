@@ -116,12 +116,13 @@ int main(void)
   MX_SPI1_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
+
   BluePill_SetBlinkState(PERMANENT_BLINK);
 
   APP_LEDC_DisplayInit();
-  APP_RDA5807M_RadioInit();
   APP_BMP280_SensorInit();
   APP_EEPROM_CheckIfOk();
+  APP_RDA5807M_RadioInit();
   APP_RTC_Init();
 
   if (systemGlobalState.states.wifiEnabled)
