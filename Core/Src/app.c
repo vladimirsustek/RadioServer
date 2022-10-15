@@ -60,6 +60,8 @@ uint8_t APP_CheckEEPROM(void)
 
 uint8_t APP_CheckRadio(void)
 {
+	return;
+	/* TODO Add mechanism to check operation*/
 	uint8_t anyFault = 0;
 	// Receiver signal strength is always > 0
 	if(0 == RDA5807mGetRSSI() && 0 == systemGlobalState.states.rdaIsMute)
@@ -298,23 +300,24 @@ void APP_ModuleCheckStates(char *message, RTC_TimeTypeDef* pRTC)
 		break;
 		case 6 :
 		{
-			LEDC_StopStandingText();
 
 			if (0 == systemGlobalState.states.rdaIsMute)
 			{
+				LEDC_StopStandingText();
 				APP_CheckRadioOperation(message);
 			}
 			else
 			{
+
 				APP_CheckTime(message, pRTC, pernamentDot);
 			}
 		}
 		break;
 		case 10 :
 		{
-			LEDC_StopStandingText();
 			if (systemGlobalState.states.wifiEnabled)
 			{
+				LEDC_StopStandingText();
 				APP_CheckWIFI();
 			}
 		}
