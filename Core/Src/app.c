@@ -186,7 +186,7 @@ void APP_CheckTemperature(char* message)
 
 void APP_CheckTime(char *message, RTC_TimeTypeDef* pRtc, uint8_t blinkDot)
 {
-	HAL_RTC_GetTime(&hrtc, pRtc, RTC_FORMAT_BIN);
+	//HAL_RTC_GetTime(&hrtc, pRtc, RTC_FORMAT_BIN);
 
 	LEDC_SetStandingDot(0);
 	sprintf(message, "%02d%02d", pRtc->Hours, pRtc->Minutes);
@@ -507,8 +507,6 @@ uint8_t APP_ReadNCDirection(void)
 
 uint8_t APP_UserInput(char *message, RTC_TimeTypeDef *pRTC)
 {
-#warning bypassed here
-	return 0;
 
 	uint8_t direction = 0;
 	const uint8_t blinkDotPeriod = 100;
@@ -824,6 +822,15 @@ uint8_t APP_ReadNCSwitch3SecPress(void)
 	return result;
 }
 
+
+void APP_CleanUPNcoder(void)
+{
+	btnSetFlag = 0;
+	btn3SecPressFlag = 0;
+	ncDirection = 0;
+	clkStateprev = 0;
+	dtStateprev = 0;
+}
 /*printf <=> uart redirection */
 int _write(int file, char *ptr, int len)
 {

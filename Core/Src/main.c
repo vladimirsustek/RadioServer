@@ -131,6 +131,8 @@ int main(void)
   }
 
   BluePill_SetBlinkState(NO_BLINK);
+
+  APP_CleanUPNcoder();
   /* USER CODE END 2 */
 
   /* Infinite loop */

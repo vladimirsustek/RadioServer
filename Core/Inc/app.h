@@ -47,5 +47,5 @@ void DBNC_NCDirection(void);
 void DBNC_NCSwitch(void);
 void DBNC_NCStart(void);
 void DBNC_NCSwitch3SecPress(void);
-
+void APP_CleanUPNcoder(void);
 #endif /* INC_APP_H_ */
