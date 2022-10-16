@@ -125,7 +125,7 @@ int main(void)
   APP_RDA5807M_RadioInit();
   APP_RTC_Init();
 
-  if (systemGlobalState.states.wifiEnabled)
+  if (systemGlobalState.states.espEnabled)
   {
 	  APP_ESP_InitConnect();
   }
@@ -152,7 +152,7 @@ int main(void)
           CmdDispatch(rxStrBuff, rxStrlng);
       }
 
-	  if (systemGlobalState.states.wifiEnabled)
+	  if (systemGlobalState.states.espEnabled)
 	  {
 	      // Function returns ESP_RET_OK when HTTP request received
 	      if(ESP_RET_OK == ESP_CheckReceiveHTTP(&pHTTPReq, &httpReqLng))

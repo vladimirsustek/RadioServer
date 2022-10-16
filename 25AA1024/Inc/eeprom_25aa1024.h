@@ -55,18 +55,18 @@
 
 typedef struct sys_state_flags
 {
-	uint8_t rdaFunctional : 1,
-	        rdaIsMute : 1,
-			espConnected : 1,
-			eepromFunctional : 1,
-			wifiEnabled : 1,
-	        dummy0x5 : 3;
+	uint8_t rdaEnabled : 1, /* To be non-volatile */
+			espEnabled : 1, /* To be non-volatile */
+
+			espConnected : 1, /* Being checked on runtime, no reason for non-volatile */
+			eepromFunctional : 1, /* Being checked on runtime, no reason for non-volatile */
+
+	        dummy0xA : 4; /* To be non-volatile 0b1010 */
 }sys_state_flags_t;
 
 typedef struct sys_state
 {
 	uint16_t radioFreq;
-	uint32_t tickOffset;
 	uint8_t radioVolm;
 	sys_state_flags_t states;
 }sys_state_t;

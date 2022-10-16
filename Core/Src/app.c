@@ -60,23 +60,24 @@ uint8_t APP_CheckEEPROM(void)
 
 uint8_t APP_CheckRadio(void)
 {
-	return;
-	/* TODO Add mechanism to check operation*/
+
 	uint8_t anyFault = 0;
-	// Receiver signal strength is always > 0
-	if(0 == RDA5807mGetRSSI() && 0 == systemGlobalState.states.rdaIsMute)
+
+	if(systemGlobalState.states.rdaEnabled)
 	{
-		// inform, save the state and try to re-init
-		systemGlobalState.states.rdaFunctional = 0;
-		  // ensure the string is displayed
-	    //while(LEDC_GetRollingStatus()) { }
-		anyFault = 1;
-		RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
+		// Receiver signal strength is always > 0
+		if (0 == RDA5807mGetRSSI())
+		{
+			anyFault = 1;
+		}
+		else
+		{
+			anyFault = 0;
+		}
 	}
 	else
 	{
 		anyFault = 0;
-		systemGlobalState.states.rdaFunctional = 1;
 	}
 	return anyFault;
 }
@@ -154,7 +155,7 @@ uint8_t APP_CheckWIFI(void)
 
 void APP_CheckRadioOperation(char* message)
 {
-	if(systemGlobalState.states.rdaFunctional && !systemGlobalState.states.rdaIsMute)
+	if(systemGlobalState.states.rdaEnabled)
 	{
 		sprintf(message, "frequency %d.%d khz volume %d",
 				systemGlobalState.radioFreq / 100,
@@ -185,6 +186,8 @@ void APP_CheckTemperature(char* message)
 
 void APP_CheckTime(char *message, RTC_TimeTypeDef* pRtc, uint8_t blinkDot)
 {
+	HAL_RTC_GetTime(&hrtc, pRtc, RTC_FORMAT_BIN);
+
 	LEDC_SetStandingDot(0);
 	sprintf(message, "%02d%02d", pRtc->Hours, pRtc->Minutes);
 	if (blinkDot)
@@ -245,6 +248,8 @@ void APP_ModuleCheckStates(char *message, RTC_TimeTypeDef* pRTC)
 	static uint8_t prevSeconds = 0;
 	static uint8_t timeElapsed = 0;
 	const uint8_t pernamentDot = 1;
+	uint8_t ee_err;
+	uint8_t rda_err;
 
 	HAL_RTC_GetTime(&hrtc, pRTC, RTC_FORMAT_BIN);
 
@@ -301,7 +306,7 @@ void APP_ModuleCheckStates(char *message, RTC_TimeTypeDef* pRTC)
 		case 6 :
 		{
 
-			if (0 == systemGlobalState.states.rdaIsMute)
+			if (systemGlobalState.states.rdaEnabled)
 			{
 				LEDC_StopStandingText();
 				APP_CheckRadioOperation(message);
@@ -315,7 +320,7 @@ void APP_ModuleCheckStates(char *message, RTC_TimeTypeDef* pRTC)
 		break;
 		case 10 :
 		{
-			if (systemGlobalState.states.wifiEnabled)
+			if (systemGlobalState.states.espEnabled)
 			{
 				LEDC_StopStandingText();
 				APP_CheckWIFI();
@@ -324,9 +329,9 @@ void APP_ModuleCheckStates(char *message, RTC_TimeTypeDef* pRTC)
 		break;
 		case 11 :
 		{
-			uint8_t ee_err = APP_CheckEEPROM();
-			uint8_t rda_err = APP_CheckRadio();
 			LEDC_StopStandingText();
+			ee_err = APP_CheckEEPROM();
+			rda_err = APP_CheckRadio();
 			if (ee_err && !rda_err) sprintf(message, "ROM ERR");
 			if (!ee_err && rda_err) sprintf(message, "RDA ERR");
 			if (ee_err && rda_err) sprintf(message, "ROM RDA ERR");
@@ -349,7 +354,7 @@ uint8_t APP_EEPROM_CheckIfOk(void)
 {
 	/* not needed to store into eeprom that the eeprom works*/
 	EEPROM_GetSystemState();
-	if (0x5 == systemGlobalState.states.dummy0x5)
+	if (0xA == systemGlobalState.states.dummy0xA)
 	{
 		systemGlobalState.states.eepromFunctional = 1;
 	}
@@ -386,7 +391,14 @@ void APP_ESP_InitConnect(void)
 
 void APP_RDA5807M_RadioInit(void)
 {
-	RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
+	if (systemGlobalState.states.rdaEnabled)
+	{
+		RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
+	}
+	else
+	{
+		RDA5807mReset();
+	}
 }
 
 void APP_BMP280_SensorInit(void)
@@ -613,19 +625,19 @@ uint8_t APP_UserInput(char *message, RTC_TimeTypeDef *pRTC)
 			{
 				if (1 == direction)
 				{
-					systemGlobalState.states.rdaIsMute = 1;
+					systemGlobalState.states.rdaEnabled = 1;
 					RDA5807mInit(systemGlobalState.radioFreq, systemGlobalState.radioVolm);
 				}
 				else
 				{
-					systemGlobalState.states.rdaIsMute = 0;
+					systemGlobalState.states.rdaEnabled = 0;
 					RDA5807mReset();
 				}
 				// set volume and save changes to EEPROM
 			}
 			if (timeOut + blinkDotPeriod < PLATFORM_TICK_MS())
 			{
-				APP_ShowMute(message, systemGlobalState.states.rdaIsMute);
+				APP_ShowMute(message, systemGlobalState.states.rdaEnabled);
 				blinkDot ^= 0x80;
 				timeOut = PLATFORM_TICK_MS();
 			}
@@ -683,7 +695,7 @@ uint8_t APP_UserInput(char *message, RTC_TimeTypeDef *pRTC)
 		if(APP_ReadNCSwitchPulse())
 		{
 			userInputFSM = SETTING_WIFI_ENABLE_DISABLE;
-			wifi = systemGlobalState.states.wifiEnabled;
+			wifi = systemGlobalState.states.espEnabled;
 			APP_ReadNCDirection();
 		}
 		else
@@ -745,9 +757,9 @@ uint8_t APP_UserInput(char *message, RTC_TimeTypeDef *pRTC)
 	break;
 	case PLATFORM_SETTINGS_SAVE :
 	{
-		uint8_t rebootNeeded = ((systemGlobalState.states.wifiEnabled != wifi) && wifi) ? 1 : 0;
+		uint8_t rebootNeeded = ((systemGlobalState.states.espEnabled != wifi) && wifi) ? 1 : 0;
 
-		systemGlobalState.states.wifiEnabled = wifi;
+		systemGlobalState.states.espEnabled = wifi;
 		EEPROM_SetSystemState();
 
 		if (rebootNeeded)
