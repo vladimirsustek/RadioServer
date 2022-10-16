@@ -117,8 +117,6 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
 
-  BluePill_SetBlinkState(PERMANENT_BLINK);
-
   APP_LEDC_DisplayInit();
   APP_BMP280_SensorInit();
   APP_EEPROM_CheckIfOk();
@@ -130,9 +128,8 @@ int main(void)
 	  APP_ESP_InitConnect();
   }
 
-  BluePill_SetBlinkState(NO_BLINK);
+  APPP_NCoderStart();
 
-  APP_CleanUPNcoder();
   /* USER CODE END 2 */
 
   /* Infinite loop */

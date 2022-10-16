@@ -122,8 +122,8 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 		BluePill_GreenLedService();
 
 		DBNC_NCSwitch();
-		DBNC_NCDirection();
 		DBNC_NCSwitch3SecPress();
+		DBNC_NCDirection();
 	}
 }
 /* USER CODE END 1 */

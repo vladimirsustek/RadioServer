@@ -11,17 +11,13 @@ char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<body>\n\
 				<h1>RDA5807 control page</h1>\n\
 				<form action=\"/pageIndex DO_INIT\r\n\">\n\
-				<input type=\"submit\" value=\"Initialize\">\n\
+				<input type=\"submit\" value=\"Radio on\">\n\
 				</form>\n\
 				<br>\n\
 				<form action=\"/pageIndex DO_RSET\r\n\">\n\
-				<input type=\"submit\" value=\"Reset\">\n\
+				<input type=\"submit\" value=\"Radio off\">\n\
 				</form>\n\
 		        <br>\n\
-				<form action=\"/pageIndex ST_MUTE\r\n\">\n\
-				<input type=\"submit\" value=\"(Un)Mute\">\n\
-				</form>\n\
-				<br>\n\
 				<form action=\"/pageIndex ST_VOLM\">\n\
 				<input type=\"text\" id=\"volm\" name=\"volm\" value=\"\"><br><br>\n\
 				<input type=\"submit\" value=\"SendVolume\">\n\
@@ -65,10 +61,6 @@ char *pageIndex ="<!DOCTYPE html>\n<html>\n\
 				<form action=\"/pageIndex ST_TIME\">\n\
 				<input type=\"text\" id=\"time\" name=\"time\" value=\"\"><br><br>\n\
 				<input type=\"submit\" value=\"SetTime\">\n\
-				</form>\n\
-				<br>\n\
-				<form action=\"/pageIndex ST_TISH\r\n\">\n\
-				<input type=\"submit\" value=\"Enable Time\">\n\
 				</form>\n\
 				</body></html>";
 

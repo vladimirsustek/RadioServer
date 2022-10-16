@@ -177,6 +177,10 @@ void BluePill_GreenLedService(void)
 		default :
 		{
 			blinkState = NO_BLINK;
+
+			/* If LED is on turn it off */
+			if (!HAL_GPIO_ReadPin(GREEN_LED_GPIO_Port, GREEN_LED_Pin))
+				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
 		}
 		break;
 		}
