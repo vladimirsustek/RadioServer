@@ -34,13 +34,13 @@ sys_state_t systemGlobalState = {0};
 
 uint32_t SPI1_NCSactivate(void)
 {
-	HAL_GPIO_WritePin(SPI1_NCS_GPIO_Port, SPI1_NCS_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(EEPROM_CS_GPIO_Port, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	return 0u;
 }
 
 uint32_t SPI1_NCSdeactivate(void)
 {
-	HAL_GPIO_WritePin(SPI1_NCS_GPIO_Port, SPI1_NCS_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(EEPROM_CS_GPIO_Port, EEPROM_CS_Pin, GPIO_PIN_SET);
 	return 0u;
 }
 
